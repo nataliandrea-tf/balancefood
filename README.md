@@ -57,7 +57,7 @@ BalanceFood es una capa de inteligencia complementaria sobre ese ecosistema:
 | **Testing** | RSpec · Vitest |
 | **Control de versiones** | Git · GitHub |
 | **Gestión** | GitHub Projects |
-| **CI/CD** | GitHub Actions |
+| **CI/CD** | Jenkins ([jenkins.frubilarz.cl](https://jenkins.frubilarz.cl/job/balancefood-backend/)) |
 
 ## 📂 Estructura del repositorio
 
@@ -109,3 +109,35 @@ Ver [CONTRIBUTING.md](CONTRIBUTING.md) para el detalle completo.
 <div align="center">
 <sub>Proyecto académico · UTEM 2026</sub>
 </div>
+
+## ⚙️ CI/CD (Jenkins)
+
+Job: <https://jenkins.frubilarz.cl/job/balancefood-backend/> (Multibranch Pipeline sobre este
+repo; cada rama y PR obtiene su propio pipeline a partir del `Jenkinsfile` de la raíz).
+Por ahora cubre solo `backend/`.
+
+Etapas que corren en **todas las ramas**:
+
+1. **Checkout**
+2. **Test DB** - PostgreSQL efímero (`postgres:16-alpine`) en la red `course-net`
+3. **Install deps** - `bundle install` en `ruby:3.3.7-slim` (gems cacheadas en el volumen `balancefood-backend-bundle`)
+4. **Lint** - `bin/rubocop`
+5. **Security** - `bin/brakeman` + `bin/bundler-audit`
+6. **Test** - `bin/rails db:test:prepare test`
+7. **Build image** - `docker build backend/`
+
+Solo en la rama **`production`**:
+
+8. **Deploy** - reemplaza el contenedor `balancefood-backend`, publicado en `127.0.0.1:4101`
+9. **Migrate** - `bin/rails db:migrate` dentro del contenedor
+10. **Health Check** - `curl -f http://127.0.0.1:4101/health` y luego `https://apibalancefood.frubilarz.cl/health`
+
+Dominio público: **https://apibalancefood.frubilarz.cl** (DNS -> servidor de Jenkins; el reverse
+proxy del servidor debe apuntar ese host a `127.0.0.1:4101`).
+
+### Credenciales requeridas en Jenkins (solo para deploy)
+
+| ID | Tipo | Valor |
+|---|---|---|
+| `balancefood-backend-rails-master-key` | Secret text | contenido de `backend/config/master.key` |
+| `balancefood-backend-database-url` | Secret text | `postgres://user:pass@host:5432/balancefood_backend_production` |
