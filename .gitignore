@@ -1,0 +1,46 @@
+# ─── Entorno / secretos ───────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+config/master.key
+config/credentials/*.key
+
+# ─── Ruby on Rails (backend/) ─────────────────────────
+backend/log/*
+backend/tmp/*
+backend/storage/*
+backend/.bundle
+backend/vendor/bundle
+backend/public/assets
+backend/coverage/
+*.sqlite3
+*.rbc
+
+# ─── Node / React (frontend/) ─────────────────────────
+node_modules/
+dist/
+build/
+.vite/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── Flutter / Dart (mobile/) ─────────────────────────
+mobile/.dart_tool/
+mobile/.packages
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/ios/Pods/
+mobile/android/.gradle/
+mobile/android/local.properties
+*.iml
+
+# ─── Editores / SO ────────────────────────────────────
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
