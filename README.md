@@ -139,5 +139,78 @@ proxy del servidor debe apuntar ese host a `127.0.0.1:4101`).
 
 | ID | Tipo | Valor |
 |---|---|---|
-| `balancefood-backend-rails-master-key` | Secret text | contenido de `backend/config/master.key` |
-| `balancefood-backend-database-url` | Secret text | `postgres://user:pass@host:5432/balancefood_backend_production` |
+| `balancefood-backend-rails-master-key` | Secret text | contenido de `backend/config/master.key` (32 caracteres hex, sin salto de línea) |
+| `balancefood-backend-database-url` | Secret text | `postgres://balancefood_backend_user:<password>@postgres:5432` (el nombre de base al final es opcional y se ignora, ver abajo) |
+
+Sin ellas el stage **Deploy** falla; las demás etapas (todas las ramas) no las necesitan.
+
+Cómo crearlas en Jenkins: **Manage Jenkins → Credentials → System → Global credentials →
+Add Credentials**, Kind = *Secret text*, Scope = *Global*, y en **ID** poner exactamente el ID
+de la tabla (el `Jenkinsfile` las busca por ese ID).
+
+`backend/config/master.key` no está en git (está en `.gitignore`); es la llave que descifra
+`backend/config/credentials.yml.enc` (donde vive `secret_key_base`). Quien tenga el repo clonado
+sin la llave puede obtenerla de otro miembro del equipo o regenerar ambas con:
+
+```bash
+cd backend
+rm config/credentials.yml.enc
+bin/rails credentials:edit   # crea config/master.key + config/credentials.yml.enc nuevos
+```
+
+(Si se regeneran, hay que actualizar la credencial `balancefood-backend-rails-master-key` en Jenkins.)
+
+### Base de datos de producción
+
+En producción la app usa **cuatro bases** en el mismo PostgreSQL (Solid Cache / Queue / Cable):
+`balancefood_backend_production`, `balancefood_backend_production_cache`,
+`balancefood_backend_production_queue` y `balancefood_backend_production_cable`.
+`backend/config/database.yml` toma host, puerto, usuario y password de `DATABASE_URL` para las
+cuatro y descarta el nombre de base que traiga la URL. El contenedor las crea al arrancar
+(`bin/rails db:prepare`), así que el usuario de la URL necesita permiso `CREATEDB`, o hay que
+crearlas a mano antes del primer deploy.
+
+En el servidor de Jenkins ya existe un PostgreSQL compartido (`postgres:16-alpine`) conectado a la
+red Docker `course-net`; su contenedor se llama `postgres`, y ese es el host de la URL (la app corre
+en la misma red). Provisión inicial, una sola vez, como superusuario
+(`docker exec -it postgres psql -U postgres`):
+
+```sql
+CREATE USER balancefood_backend_user WITH PASSWORD '<password>';
+CREATE DATABASE balancefood_backend_production       OWNER balancefood_backend_user;
+CREATE DATABASE balancefood_backend_production_cache OWNER balancefood_backend_user;
+CREATE DATABASE balancefood_backend_production_queue OWNER balancefood_backend_user;
+CREATE DATABASE balancefood_backend_production_cable OWNER balancefood_backend_user;
+REVOKE ALL ON DATABASE balancefood_backend_production,
+                       balancefood_backend_production_cache,
+                       balancefood_backend_production_queue,
+                       balancefood_backend_production_cable FROM PUBLIC;
+```
+
+### Reverse proxy (Nginx + Certbot)
+
+El contenedor solo escucha en `127.0.0.1:4101`. Para exponerlo en `https://apibalancefood.frubilarz.cl`
+(el DNS ya apunta al servidor) hace falta un server block en Nginx igual al de los otros
+proyectos del curso y luego `certbot --nginx -d apibalancefood.frubilarz.cl`:
+
+```nginx
+server {
+    listen 80;
+    listen [::]:80;
+    server_name apibalancefood.frubilarz.cl;
+    location / {
+        proxy_pass http://127.0.0.1:4101;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+### Primer deploy
+
+1. Crear las dos credenciales en Jenkins y la base/usuario en PostgreSQL (arriba).
+2. Crear la rama `production` desde `main` y hacer push: `git checkout -b production && git push -u origin production`.
+3. El Multibranch Pipeline detecta la rama y corre CI + Deploy + Migrate + Health Check.
+4. Verificar: `curl https://apibalancefood.frubilarz.cl/health`.

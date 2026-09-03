@@ -84,12 +84,22 @@ test:
 # Read https://guides.rubyonrails.org/configuring.html#configuring-a-database
 # for a full overview on how database connection configuration can be specified.
 #
+# En produccion la conexion viene de DATABASE_URL (credencial de Jenkins
+# `balancefood-backend-database-url`). Rails solo aplica DATABASE_URL a la base
+# `primary`, por lo que aqui se propaga explicitamente a las cuatro bases
+# (primary, cache, queue y cable) via la clave `url`. Se descarta el nombre de
+# base que traiga la URL para que cada una conserve el suyo, asi que la
+# credencial puede ser `postgres://user:pass@host:5432` con o sin base al final.
+<% production_db_url = ENV["DATABASE_URL"].to_s.sub(%r{\A([a-z]+://[^/?#]*)/[^?#]*}, '\1') %>
 production:
   primary: &primary_production
     <<: *default
     database: balancefood_backend_production
     username: balancefood_backend
     password: <%= ENV["BALANCEFOOD_BACKEND_DATABASE_PASSWORD"] %>
+<% unless production_db_url.empty? %>
+    url: <%= production_db_url %>
+<% end %>
   cache:
     <<: *primary_production
     database: balancefood_backend_production_cache
