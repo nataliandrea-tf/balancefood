@@ -12,7 +12,11 @@ Rails.application.routes.draw do
       delete "auth/logout", to: "sessions#destroy"
       get "auth/me", to: "sessions#me"
 
-      resources :restaurants
+      resources :restaurants do
+        resources :menu_items, only: [ :index, :create ]
+      end
+
+      resources :menu_items, only: [ :show, :update, :destroy ]
     end
   end
 end
