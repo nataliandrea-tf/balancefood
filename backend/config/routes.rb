@@ -11,6 +11,8 @@ Rails.application.routes.draw do
       post "auth/login", to: "sessions#create"
       delete "auth/logout", to: "sessions#destroy"
       get "auth/me", to: "sessions#me"
+
+      resources :restaurants
     end
   end
 end
