@@ -1,0 +1,8 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+almuerzo_lunes:
+  user: natalia
+  menu_item: menu_dia
+  amount: 3500
+  description: Almuerzo del lunes
+  spent_on: <%= Date.current %>
