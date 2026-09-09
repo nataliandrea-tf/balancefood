@@ -1,0 +1,17 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+menu_dia:
+  restaurant: casino_central
+  name: Menú del día
+  description: Entrada, fondo y postre
+  price: 3500
+  category: Almuerzo
+  available: true
+
+completo:
+  restaurant: casino_central
+  name: Completo italiano
+  description: Con palta y tomate
+  price: 2200
+  category: Snack
+  available: true

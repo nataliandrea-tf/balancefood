@@ -1,0 +1,9 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+casino_central:
+  name: Casino Central
+  address: Dieciocho 161
+  campus: Campus Central
+  category: Casino
+  description: Menús del día para estudiantes
+  user: comerciante

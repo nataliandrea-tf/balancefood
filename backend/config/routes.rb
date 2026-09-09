@@ -5,9 +5,19 @@ Rails.application.routes.draw do
   # Health check propio, usado por el pipeline de Jenkins.
   get "health" => "health#show", as: :health
 
-  # Endpoints REST versionados (ver docs/01-arquitectura.md).
   namespace :api do
     namespace :v1 do
+      post "auth/signup", to: "users#create"
+      post "auth/login", to: "sessions#create"
+      delete "auth/logout", to: "sessions#destroy"
+      get "auth/me", to: "sessions#me"
+
+      resources :restaurants do
+        resources :menu_items, only: [ :index, :create ]
+      end
+
+      resources :menu_items, only: [ :show, :update, :destroy ]
+      resources :expenses
     end
   end
 end
