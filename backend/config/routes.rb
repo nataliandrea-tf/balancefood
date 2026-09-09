@@ -17,6 +17,7 @@ Rails.application.routes.draw do
       end
 
       resources :menu_items, only: [ :show, :update, :destroy ]
+      resources :expenses
     end
   end
 end
