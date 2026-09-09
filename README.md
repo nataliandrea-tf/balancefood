@@ -256,7 +256,7 @@ En desarrollo, `config/database.yml` omite el usuario y toma el del sistema oper
 
 | Variable | Requerida | Por defecto | Descripción |
 |---|:---:|---|---|
-| `VITE_API_URL` | No | `http://localhost:3000/api/v1` | URL base de la API |
+| `VITE_API_URL` | No | `http://localhost:3000/api/v1` | URL base de la API. Vite la incrusta en el bundle al compilar (ver `frontend/.env.example`); en producción el pipeline la fija en `https://apibalancefood.frubilarz.cl/api/v1` |
 
 ## 🌐 Producción
 
@@ -264,7 +264,7 @@ En desarrollo, `config/database.yml` omite el usuario y toma el del sistema oper
 |---|---|
 | API | <https://apibalancefood.frubilarz.cl> |
 | Health check | <https://apibalancefood.frubilarz.cl/health> |
-| Frontend | _pendiente de despliegue_ |
+| Frontend | <https://balancefood.frubilarz.cl> |
 
 ### Credenciales de prueba
 
@@ -321,26 +321,41 @@ Casos concretos donde el diagnóstico requirió comprensión propia del código:
 
 ## ⚙️ CI/CD (Jenkins)
 
-Job: <https://jenkins.frubilarz.cl/job/balancefood-backend/> (Multibranch Pipeline sobre este repo; cada rama y PR obtiene su propio pipeline a partir del `Jenkinsfile` de la raíz). Por ahora cubre solo `backend/`.
+Job: <https://jenkins.frubilarz.cl/job/balancefood-backend/> (Multibranch Pipeline sobre este repo; cada rama y PR obtiene su propio pipeline a partir del `Jenkinsfile` de la raíz). Cubre `backend/` y `frontend/`; `mobile/` queda pendiente.
 
 Etapas que corren en **todas las ramas**:
 
 1. **Checkout**
 2. **Test DB** — PostgreSQL efímero (`postgres:16-alpine`) en la red `course-net`
-3. **Install deps** — `bundle install` en `ruby:3.3.7-slim` (gems cacheadas en el volumen `balancefood-backend-bundle`)
-4. **Lint** — `bin/rubocop`
-5. **Security** — `bin/brakeman` + `bin/bundler-audit`
-6. **Test** — `bin/rails db:test:prepare test`
-7. **Build image** — `docker build backend/`
+3. **Backend: Build & Test** — en `ruby:3.3.7-slim` (gems cacheadas en el volumen `balancefood-backend-bundle`)
+   - **Install deps** — `bundle install`
+   - **Lint** — `bin/rubocop`
+   - **Security** — `bin/brakeman` + `bin/bundler-audit`
+   - **Test** — `bin/rails db:test:prepare test`
+4. **Frontend: Build & Test** — en `node:22-alpine` (cache de npm en el volumen `balancefood-frontend-npm`)
+   - **npm ci**
+   - **ESLint** — `npm run lint`. Mientras la app tenga errores de lint pendientes el stage queda **UNSTABLE** (amarillo) sin cortar el build; cuando se corrijan hay que volverlo bloqueante en el `Jenkinsfile`.
+   - **Vite build** — `npm run build` con `VITE_API_URL=https://apibalancefood.frubilarz.cl/api/v1`
+5. **Backend: Build image** — `docker build backend/`
+6. **Frontend: Build image** — `docker build frontend/` (multi-stage: compila con Vite y sirve `dist/` con Nginx; `VITE_API_URL` va como `--build-arg` porque Vite la incrusta en el bundle)
 
-Solo en la rama **`production`**:
+Solo en la rama **`production`**, y solo si toda la CI anterior pasó:
 
-8. **Deploy** — reemplaza el contenedor `balancefood-backend`, publicado en `127.0.0.1:4101`
-9. **Health Check** — `curl -f http://127.0.0.1:4101/health` y luego `https://apibalancefood.frubilarz.cl/health`
+7. **Backend: Deploy** — reemplaza el contenedor `balancefood-backend`, publicado en `127.0.0.1:4101`, con `CORS_ORIGINS=https://balancefood.frubilarz.cl`
+8. **Backend: Health Check** — `curl -f http://127.0.0.1:4101/health` (hasta 240 s) y luego `https://apibalancefood.frubilarz.cl/health`
+9. **Frontend: Deploy** — reemplaza el contenedor `balancefood-frontend`, publicado en `127.0.0.1:4103`
+10. **Frontend: Health Check** — `curl -f http://127.0.0.1:4103/health`, comprueba que `/` devuelva el `index.html` de la SPA y luego `https://balancefood.frubilarz.cl/`
 
-Las migraciones se ejecutan al arrancar el contenedor mediante `bin/rails db:prepare`, no como una etapa separada del pipeline.
+Las migraciones se ejecutan al arrancar el contenedor del backend mediante `bin/rails db:prepare`, no como una etapa separada del pipeline.
 
-Dominio público: **https://apibalancefood.frubilarz.cl** (DNS → servidor de Jenkins; el reverse proxy del servidor apunta ese host a `127.0.0.1:4101`).
+Dominios públicos (DNS → servidor de Jenkins; el reverse proxy del servidor apunta cada host a su puerto local):
+
+| Servicio | Contenedor | Puerto local | Dominio |
+|---|---|---|---|
+| API Rails | `balancefood-backend` | `127.0.0.1:4101` | **https://apibalancefood.frubilarz.cl** |
+| Web React | `balancefood-frontend` | `127.0.0.1:4103` | **https://balancefood.frubilarz.cl** |
+
+Para desplegar: PR a `main` (CI en verde) y luego PR de `main` a `production`; el push a `production` dispara el deploy de ambos servicios en el mismo build.
 
 ### Credenciales requeridas en Jenkins (solo para deploy)
 
@@ -383,7 +398,7 @@ REVOKE ALL ON DATABASE balancefood_backend_production,
 
 ### Reverse proxy (Nginx + Certbot)
 
-El contenedor solo escucha en `127.0.0.1:4101`. Para exponerlo en `https://apibalancefood.frubilarz.cl` hace falta un server block en Nginx y luego `certbot --nginx -d apibalancefood.frubilarz.cl`:
+Los contenedores solo escuchan en loopback (`127.0.0.1:4101` el backend, `127.0.0.1:4103` el frontend). Para exponerlos en sus dominios hace falta un server block en Nginx por cada uno y luego `certbot --nginx -d <dominio>`. Backend:
 
 ```nginx
 server {
@@ -399,6 +414,30 @@ server {
     }
 }
 ```
+
+Frontend (`/etc/nginx/sites-available/balancefood.frubilarz.cl`, enlazado en `sites-enabled`):
+
+```nginx
+server {
+    listen 80;
+    listen [::]:80;
+    server_name balancefood.frubilarz.cl;
+    location / {
+        proxy_pass http://127.0.0.1:4103;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d balancefood.frubilarz.cl
+```
+
+El Nginx que vive dentro del contenedor del frontend (`frontend/nginx.conf`) solo sirve los estáticos de Vite con fallback a `index.html` para las rutas de React Router; TLS y dominio los maneja el Nginx del servidor.
 
 ## 🚦 Estado del proyecto
 
