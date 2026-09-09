@@ -20,7 +20,9 @@
 // Nada se despliega si falla la CI de cualquiera de los dos.
 //
 // Produccion: cada contenedor se publica en un puerto de loopback y el reverse proxy del
-// servidor (Nginx + Certbot) expone el dominio publico hacia ese puerto:
+// servidor (Nginx + Certbot) expone el dominio publico hacia ese puerto. Ojo: Jenkins corre
+// en su propio contenedor, asi que desde el pipeline 127.0.0.1 NO es el loopback del host;
+// los health checks se ejecutan con `docker exec` dentro del contenedor de cada app.
 //   backend  127.0.0.1:4101 -> https://apibalancefood.frubilarz.cl
 //   frontend 127.0.0.1:4103 -> https://balancefood.frubilarz.cl
 // El backend recibe CORS_ORIGINS con el origen del frontend (config/initializers/cors.rb).
@@ -205,9 +207,11 @@ pipeline {
                 // Un arranque en frio (db:prepare + Puma + Thruster) en este droplet puede
                 // pasar de 2 min (condotrack production #7 se agoto a los 120 s con la app aun
                 // subiendo), asi que se esperan hasta 240 s. Si el contenedor muere antes, se corta.
+                // El curl corre dentro del contenedor (la imagen trae curl): desde Jenkins, que
+                // tambien es un contenedor, 127.0.0.1:4101 no llega al host (production #5).
                 sh '''
                     for i in $(seq 1 80); do
-                      if curl -fsS "http://127.0.0.1:$DEPLOY_PORT/health"; then echo; break; fi
+                      if docker exec "$APP_NAME" curl -fsS http://127.0.0.1/health; then echo; break; fi
                       if [ "$(docker inspect -f '{{.State.Running}}' "$APP_NAME" 2>/dev/null)" != "true" ]; then
                         echo "El contenedor $APP_NAME no esta corriendo"; docker logs --tail 50 "$APP_NAME"; exit 1
                       fi
@@ -237,9 +241,11 @@ pipeline {
         stage('Frontend: Health Check') {
             when { branch 'production' }
             steps {
+                // nginx:alpine no trae curl pero si wget (busybox); se ejecuta dentro del contenedor
+                // por la misma razon que en el backend.
                 sh '''
                     for i in $(seq 1 20); do
-                      if curl -fsS "http://127.0.0.1:$FRONTEND_DEPLOY_PORT/health"; then break; fi
+                      if docker exec "$FRONTEND_APP_NAME" wget -qO- http://127.0.0.1/health; then break; fi
                       if [ "$(docker inspect -f '{{.State.Running}}' "$FRONTEND_APP_NAME" 2>/dev/null)" != "true" ]; then
                         echo "El contenedor $FRONTEND_APP_NAME no esta corriendo"; docker logs --tail 50 "$FRONTEND_APP_NAME"; exit 1
                       fi
@@ -247,7 +253,7 @@ pipeline {
                       sleep 3
                     done
                     # La raiz debe devolver el index.html de la SPA (no una pagina de error de Nginx).
-                    curl -fsS "http://127.0.0.1:$FRONTEND_DEPLOY_PORT/" | grep -q '<div id="root">'
+                    docker exec "$FRONTEND_APP_NAME" wget -qO- http://127.0.0.1/ | grep -q '<div id="root">'
                     # Verificacion publica a traves del reverse proxy (no bloquea si el proxy aun no esta configurado).
                     curl -fsS -o /dev/null "$FRONTEND_PUBLIC_URL/" && echo "$FRONTEND_PUBLIC_URL OK" \
                       || echo "AVISO: $FRONTEND_PUBLIC_URL no responde; revisar Nginx/Certbot en el servidor"
