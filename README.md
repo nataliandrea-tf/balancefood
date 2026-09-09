@@ -342,9 +342,11 @@ Etapas que corren en **todas las ramas**:
 Solo en la rama **`production`**, y solo si toda la CI anterior pasó:
 
 7. **Backend: Deploy** — reemplaza el contenedor `balancefood-backend`, publicado en `127.0.0.1:4101`, con `CORS_ORIGINS=https://balancefood.frubilarz.cl`
-8. **Backend: Health Check** — `curl -f http://127.0.0.1:4101/health` (hasta 240 s) y luego `https://apibalancefood.frubilarz.cl/health`
+8. **Backend: Health Check** — `docker exec balancefood-backend curl -f http://127.0.0.1/health` (hasta 240 s) y luego `https://apibalancefood.frubilarz.cl/health`
 9. **Frontend: Deploy** — reemplaza el contenedor `balancefood-frontend`, publicado en `127.0.0.1:4103`
-10. **Frontend: Health Check** — `curl -f http://127.0.0.1:4103/health`, comprueba que `/` devuelva el `index.html` de la SPA y luego `https://balancefood.frubilarz.cl/`
+10. **Frontend: Health Check** — `docker exec balancefood-frontend wget -qO- http://127.0.0.1/health`, comprueba que `/` devuelva el `index.html` de la SPA y luego `https://balancefood.frubilarz.cl/`
+
+Los health checks corren **dentro** del contenedor de cada app porque Jenkins también es un contenedor: desde el pipeline, `127.0.0.1:4101` no es el loopback del host.
 
 Las migraciones se ejecutan al arrancar el contenedor del backend mediante `bin/rails db:prepare`, no como una etapa separada del pipeline.
 
