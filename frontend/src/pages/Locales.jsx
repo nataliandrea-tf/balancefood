@@ -4,21 +4,24 @@ import { api } from "../api/client";
 
 export default function Locales() {
   const [locales, setLocales] = useState([]);
+  const [campusDisponibles, setCampusDisponibles] = useState([]);
   const [campus, setCampus] = useState("");
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     let cancelado = false;
-    setCargando(true);
-    setError(null);
-
     const query = campus ? `?campus=${encodeURIComponent(campus)}` : "";
 
     api
       .get(`/restaurants${query}`, { auth: false })
       .then((data) => {
-        if (!cancelado) setLocales(data);
+        if (cancelado) return;
+        setLocales(data);
+        setError(null);
+        if (!campus) {
+          setCampusDisponibles([...new Set(data.map((l) => l.campus))].sort());
+        }
       })
       .catch((err) => {
         if (!cancelado) setError(err.message);
@@ -32,7 +35,10 @@ export default function Locales() {
     };
   }, [campus]);
 
-  const campusDisponibles = [...new Set(locales.map((l) => l.campus))].sort();
+  function filtrar(valor) {
+    setCargando(true);
+    setCampus(valor);
+  }
 
   return (
     <>
@@ -43,7 +49,7 @@ export default function Locales() {
 
       <label style={{ maxWidth: 280 }}>
         <span>Filtrar por campus</span>
-        <select value={campus} onChange={(e) => setCampus(e.target.value)}>
+        <select value={campus} onChange={(e) => filtrar(e.target.value)}>
           <option value="">Todos</option>
           {campusDisponibles.map((c) => (
             <option key={c} value={c}>{c}</option>

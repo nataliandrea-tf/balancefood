@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 export default function LocalDetalle() {
   const { id } = useParams();
@@ -9,18 +9,27 @@ export default function LocalDetalle() {
   const navigate = useNavigate();
 
   const [local, setLocal] = useState(null);
-  const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [mensaje, setMensaje] = useState(null);
   const [registrando, setRegistrando] = useState(null);
 
+  const cargando = !local && !error;
+
   useEffect(() => {
-    setCargando(true);
+    let cancelado = false;
+
     api
       .get(`/restaurants/${id}`, { auth: false })
-      .then(setLocal)
-      .catch((err) => setError(err.message))
-      .finally(() => setCargando(false));
+      .then((data) => {
+        if (!cancelado) setLocal(data);
+      })
+      .catch((err) => {
+        if (!cancelado) setError(err.message);
+      });
+
+    return () => {
+      cancelado = true;
+    };
   }, [id]);
 
   async function registrarConsumo(item) {
@@ -54,10 +63,9 @@ export default function LocalDetalle() {
   }
 
   if (cargando) return <p className="cargando">Cargando…</p>;
-  if (error && !local) return <p className="error">{error}</p>;
-  if (!local) return null;
+  if (!local) return <p className="error">{error}</p>;
 
-  const asequibles = user?.current_balance ?? null;
+  const saldo = user?.current_balance ?? null;
 
   return (
     <>
@@ -80,7 +88,7 @@ export default function LocalDetalle() {
 
       <div className="grilla">
         {local.menu_items.map((item) => {
-          const alcanza = asequibles === null || item.price <= asequibles;
+          const alcanza = saldo === null || item.price <= saldo;
 
           return (
             <div className="tarjeta" key={item.id}>
@@ -89,10 +97,7 @@ export default function LocalDetalle() {
               <p className="precio">${item.price}</p>
 
               {!item.available && <p className="suave">No disponible hoy</p>}
-
-              {user && !alcanza && (
-                <p className="suave">Supera tu saldo actual</p>
-              )}
+              {user && !alcanza && <p className="suave">Supera tu saldo actual</p>}
 
               <div className="acciones">
                 <button
