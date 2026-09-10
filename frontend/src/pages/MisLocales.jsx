@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
 import { api } from "../api/client";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 const VACIO = { name: "", address: "", campus: "", category: "", description: "" };
 const PLATO_VACIO = { name: "", description: "", price: "", category: "" };
 
 export default function MisLocales() {
   const { user } = useAuth();
+  const userId = user.id;
 
   const [locales, setLocales] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [mensaje, setMensaje] = useState(null);
+  const [version, setVersion] = useState(0);
 
   const [form, setForm] = useState(VACIO);
   const [editandoId, setEditandoId] = useState(null);
@@ -23,19 +25,27 @@ export default function MisLocales() {
   const [editandoPlato, setEditandoPlato] = useState(null);
 
   useEffect(() => {
-    cargar();
-  }, []);
+    let cancelado = false;
 
-  async function cargar() {
-    setCargando(true);
-    try {
-      const data = await api.get("/restaurants", { auth: false });
-      setLocales(data.filter((l) => l.user_id === user.id));
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setCargando(false);
-    }
+    api
+      .get("/restaurants", { auth: false })
+      .then((data) => {
+        if (!cancelado) setLocales(data.filter((l) => l.user_id === userId));
+      })
+      .catch((err) => {
+        if (!cancelado) setError(err.message);
+      })
+      .finally(() => {
+        if (!cancelado) setCargando(false);
+      });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [version, userId]);
+
+  function recargar() {
+    setVersion((v) => v + 1);
   }
 
   function cambiar(campo, valor) {
@@ -63,7 +73,7 @@ export default function MisLocales() {
       }
       setForm(VACIO);
       setEditandoId(null);
-      await cargar();
+      recargar();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -90,10 +100,15 @@ export default function MisLocales() {
     try {
       await api.delete(`/restaurants/${local.id}`);
       setMensaje("Local eliminado.");
-      await cargar();
+      recargar();
     } catch (err) {
       setError(err.message);
     }
+  }
+
+  async function cargarPlatos(localId) {
+    const data = await api.get(`/restaurants/${localId}/menu_items`, { auth: false });
+    setPlatos((prev) => ({ ...prev, [localId]: data }));
   }
 
   async function verPlatos(local) {
@@ -107,8 +122,7 @@ export default function MisLocales() {
     setEditandoPlato(null);
 
     try {
-      const data = await api.get(`/restaurants/${local.id}/menu_items`, { auth: false });
-      setPlatos((prev) => ({ ...prev, [local.id]: data }));
+      await cargarPlatos(local.id);
     } catch (err) {
       setError(err.message);
     }
@@ -143,9 +157,7 @@ export default function MisLocales() {
 
       setPlatoForm(PLATO_VACIO);
       setEditandoPlato(null);
-
-      const data = await api.get(`/restaurants/${localId}/menu_items`, { auth: false });
-      setPlatos((prev) => ({ ...prev, [localId]: data }));
+      await cargarPlatos(localId);
     } catch (err) {
       setError(err.message);
     }
@@ -156,9 +168,8 @@ export default function MisLocales() {
 
     try {
       await api.delete(`/menu_items/${plato.id}`);
-      const data = await api.get(`/restaurants/${localId}/menu_items`, { auth: false });
-      setPlatos((prev) => ({ ...prev, [localId]: data }));
       setMensaje("Plato eliminado.");
+      await cargarPlatos(localId);
     } catch (err) {
       setError(err.message);
     }
@@ -190,7 +201,7 @@ export default function MisLocales() {
             <input
               value={form.campus}
               onChange={(e) => cambiar("campus", e.target.value)}
-              placeholder="Campus Central"
+              placeholder="Campus Macul"
             />
           </label>
 

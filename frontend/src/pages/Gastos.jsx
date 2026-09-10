@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../api/client";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 const HOY = new Date().toISOString().slice(0, 10);
 const VACIO = { amount: "", description: "", spent_on: HOY };
@@ -13,27 +13,37 @@ export default function Gastos() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [mensaje, setMensaje] = useState(null);
+  const [version, setVersion] = useState(0);
 
   const [form, setForm] = useState(VACIO);
   const [editandoId, setEditandoId] = useState(null);
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
-    cargar();
-  }, []);
+    let cancelado = false;
 
-  async function cargar() {
-    setCargando(true);
-    try {
-      const data = await api.get("/expenses");
-      setGastos(data.expenses);
-      setResumen(data.summary);
-      actualizarSaldo(data.summary.saldo_actual);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setCargando(false);
-    }
+    api
+      .get("/expenses")
+      .then((data) => {
+        if (cancelado) return;
+        setGastos(data.expenses);
+        setResumen(data.summary);
+        actualizarSaldo(data.summary.saldo_actual);
+      })
+      .catch((err) => {
+        if (!cancelado) setError(err.message);
+      })
+      .finally(() => {
+        if (!cancelado) setCargando(false);
+      });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [version, actualizarSaldo]);
+
+  function recargar() {
+    setVersion((v) => v + 1);
   }
 
   function cambiar(campo, valor) {
@@ -71,7 +81,7 @@ export default function Gastos() {
 
       setForm(VACIO);
       setEditandoId(null);
-      await cargar();
+      recargar();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -96,7 +106,7 @@ export default function Gastos() {
     try {
       await api.delete(`/expenses/${gasto.id}`);
       setMensaje("Gasto eliminado. El monto volvió a tu saldo.");
-      await cargar();
+      recargar();
     } catch (err) {
       setError(err.message);
     }
