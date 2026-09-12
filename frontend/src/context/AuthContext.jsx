@@ -1,57 +1,50 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { api } from "../api/client";
+import { AuthContext } from "./auth-context";
 
-const AuthContext = createContext(null);
+const CLAVE_TOKEN = "balancefood_token";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [cargando, setCargando] = useState(true);
+  const [cargando, setCargando] = useState(() =>
+    Boolean(localStorage.getItem(CLAVE_TOKEN))
+  );
 
   useEffect(() => {
-    const token = localStorage.getItem("balancefood_token");
-
-    if (!token) {
-      setCargando(false);
-      return;
-    }
+    if (!localStorage.getItem(CLAVE_TOKEN)) return;
 
     api
       .get("/auth/me")
       .then((data) => setUser(data.user))
-      .catch(() => localStorage.removeItem("balancefood_token"))
+      .catch(() => localStorage.removeItem(CLAVE_TOKEN))
       .finally(() => setCargando(false));
   }, []);
 
-  async function login(email, password) {
+  const login = useCallback(async (email, password) => {
     const data = await api.post("/auth/login", { email, password }, { auth: false });
-    localStorage.setItem("balancefood_token", data.token);
+    localStorage.setItem(CLAVE_TOKEN, data.token);
     setUser(data.user);
-  }
+  }, []);
 
-  async function signup(datos) {
+  const signup = useCallback(async (datos) => {
     const data = await api.post("/auth/signup", { user: datos }, { auth: false });
-    localStorage.setItem("balancefood_token", data.token);
+    localStorage.setItem(CLAVE_TOKEN, data.token);
     setUser(data.user);
-  }
+  }, []);
 
-  function logout() {
-    localStorage.removeItem("balancefood_token");
+  const logout = useCallback(() => {
+    localStorage.removeItem(CLAVE_TOKEN);
     setUser(null);
-  }
+  }, []);
 
-  function actualizarSaldo(saldo) {
+  const actualizarSaldo = useCallback((saldo) => {
     setUser((prev) => (prev ? { ...prev, current_balance: saldo } : prev));
-  }
+  }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{ user, cargando, login, signup, logout, actualizarSaldo }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const valor = useMemo(
+    () => ({ user, cargando, login, signup, logout, actualizarSaldo }),
+    [user, cargando, login, signup, logout, actualizarSaldo]
   );
-}
 
-export function useAuth() {
-  return useContext(AuthContext);
+  return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;
 }
