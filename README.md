@@ -262,15 +262,23 @@ En desarrollo, `config/database.yml` omite el usuario y toma el del sistema oper
 
 | Recurso | URL |
 |---|---|
+| Aplicación web | <https://balancefood.frubilarz.cl> |
 | API | <https://apibalancefood.frubilarz.cl> |
 | Health check | <https://apibalancefood.frubilarz.cl/health> |
-| Frontend | <https://balancefood.frubilarz.cl> |
 
 ### Credenciales de prueba
 
-| Rol | Correo | Contraseña |
+| Perfil | Correo | Contraseña |
 |---|---|---|
-| _pendiente_ | | |
+| Estudiante | `demo@utem.cl` | `balancefood2026` |
+| Locatario | `locatario@balancefood.cl` | `balancefood2026` |
+
+La cuenta de estudiante tiene saldo JUNAEB configurado y gastos registrados,
+de modo que el resumen presupuestario muestra valores reales. La cuenta de
+locatario es propietaria del local publicado en el catálogo y permite probar
+la gestión de cartas y precios.
+
+Los datos de demostración se pueden recrear con `bin/rails db:seed`.
 
 ## 📂 Estructura del repositorio
 
