@@ -31,4 +31,32 @@ class ExpenseTest < ActiveSupport::TestCase
   gasto.update!(amount: 5000)
   assert_equal 27000, natalia.reload.current_balance
 end
+
+
+  test "no permite editar un gasto a un monto mayor al saldo disponible" do
+    natalia = users(:natalia)
+    gasto = Expense.create!(user: natalia, amount: 3000, spent_on: Date.current)
+    saldo = natalia.reload.current_balance
+
+    assert_not gasto.update(amount: saldo + 3000 + 1)
+    assert_equal saldo, natalia.reload.current_balance
+  end
+
+  test "bajar el monto de un gasto devuelve la diferencia al saldo" do
+    natalia = users(:natalia)
+    gasto = Expense.create!(user: natalia, amount: 5000, spent_on: Date.current)
+    saldo = natalia.reload.current_balance
+
+    gasto.update!(amount: 2000)
+    assert_equal saldo + 3000, natalia.reload.current_balance
+  end
+
+  test "editar solo la fecha no modifica el saldo" do
+    natalia = users(:natalia)
+    gasto = Expense.create!(user: natalia, amount: 3000, spent_on: Date.current)
+    saldo = natalia.reload.current_balance
+
+    gasto.update!(spent_on: Date.yesterday)
+    assert_equal saldo, natalia.reload.current_balance
+  end
 end
