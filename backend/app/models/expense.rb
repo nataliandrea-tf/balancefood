@@ -18,7 +18,7 @@ class Expense < ApplicationRecord
   def no_supera_saldo
     return if user.nil? || user.current_balance.nil? || amount.nil?
 
-    disponible = user.current_balance + (persisted? ? amount_was.to_i : 0)
+      disponible = user.current_balance + amount_in_database.to_i
     return if amount <= disponible
 
     errors.add(:amount, "supera tu saldo disponible")
