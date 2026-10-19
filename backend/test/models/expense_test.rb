@@ -23,12 +23,12 @@ class ExpenseTest < ActiveSupport::TestCase
     assert_not_includes resultado, antiguo
   end
 
-    test "editar el monto ajusta el saldo por la diferencia" do
-    natalia = users(:natalia) # saldo inicial 32000
-    gasto = Expense.create!(user: natalia, amount: 3000, spent_on: Date.current)
-    assert_equal 29000, natalia.reload.current_balance
+  test "editar el monto ajusta el saldo por la diferencia" do
+  natalia = users(:natalia) # saldo inicial 32000
+  gasto = Expense.create!(user: natalia, amount: 3000, spent_on: Date.current)
+  assert_equal 29000, natalia.reload.current_balance
 
-    gasto.update!(amount: 5000)
-    assert_equal 27000, natalia.reload.current_balance
-  end
+  gasto.update!(amount: 5000)
+  assert_equal 27000, natalia.reload.current_balance
+end
 end
