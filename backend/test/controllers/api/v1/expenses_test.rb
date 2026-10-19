@@ -71,13 +71,13 @@ module Api
         assert_response :unprocessable_entity
       end
 
-      test "el saldo nunca queda negativo" do
+      test "rechaza un gasto que supera el saldo disponible" do
         post "/api/v1/expenses",
              params: { expense: { amount: 999_999, spent_on: Date.current } },
              headers: auth_header(@usuario), as: :json
 
-        assert_response :created
-        assert_equal 0, @usuario.reload.current_balance
+        assert_response :unprocessable_entity
+        assert_equal 32000, @usuario.reload.current_balance
       end
 
       test "destroy devuelve el monto al saldo" do
