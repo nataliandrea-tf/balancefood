@@ -1,7 +1,5 @@
 require "test_helper"
 
-require "test_helper"
-
 class ExpenseTest < ActiveSupport::TestCase
   test "es válido sin menu_item asociado" do
     gasto = Expense.new(user: users(:natalia), amount: 5000, spent_on: Date.current)
@@ -23,5 +21,14 @@ class ExpenseTest < ActiveSupport::TestCase
     resultado = Expense.for_month(Date.current)
     assert_includes resultado, expenses(:almuerzo_lunes)
     assert_not_includes resultado, antiguo
+  end
+
+    test "editar el monto ajusta el saldo por la diferencia" do
+    natalia = users(:natalia) # saldo inicial 32000
+    gasto = Expense.create!(user: natalia, amount: 3000, spent_on: Date.current)
+    assert_equal 29000, natalia.reload.current_balance
+
+    gasto.update!(amount: 5000)
+    assert_equal 27000, natalia.reload.current_balance
   end
 end
