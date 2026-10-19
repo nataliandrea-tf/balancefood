@@ -5,6 +5,7 @@ class Expense < ApplicationRecord
   validates :amount, presence: true,
                      numericality: { only_integer: true, greater_than: 0 }
   validates :spent_on, presence: true
+  validate :no_supera_saldo
 
   scope :for_month, ->(date) { where(spent_on: date.beginning_of_month..date.end_of_month) }
 
@@ -14,10 +15,19 @@ class Expense < ApplicationRecord
 
   private
 
+  def no_supera_saldo
+    return if user.nil? || user.current_balance.nil? || amount.nil?
+
+    disponible = user.current_balance + (persisted? ? amount_was.to_i : 0)
+    return if amount <= disponible
+
+    errors.add(:amount, "supera tu saldo disponible")
+  end
+
   def descontar_saldo
     return if user.current_balance.nil?
 
-    user.update_column(:current_balance, [ user.current_balance - amount, 0 ].max)
+    user.update_column(:current_balance, user.current_balance - amount)
   end
 
   def devolver_saldo
@@ -25,7 +35,7 @@ class Expense < ApplicationRecord
 
     user.update_column(:current_balance, user.current_balance + amount)
   end
-  
+
   def ajustar_saldo
     return if user.current_balance.nil?
 
