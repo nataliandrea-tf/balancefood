@@ -10,6 +10,7 @@ class Expense < ApplicationRecord
 
   after_create :descontar_saldo
   after_destroy :devolver_saldo
+  after_update :ajustar_saldo, if: :saved_change_to_amount?
 
   private
 
@@ -23,5 +24,12 @@ class Expense < ApplicationRecord
     return if user.current_balance.nil?
 
     user.update_column(:current_balance, user.current_balance + amount)
+  end
+  
+  def ajustar_saldo
+    return if user.current_balance.nil?
+
+    anterior, nuevo = saved_change_to_amount
+    user.update_column(:current_balance, user.current_balance + anterior - nuevo)
   end
 end
