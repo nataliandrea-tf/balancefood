@@ -4,6 +4,12 @@ function getToken() {
   return localStorage.getItem("balancefood_token");
 }
 
+let alExpirarSesion = null;
+
+export function onSesionExpirada(callback) {
+  alExpirarSesion = callback;
+}
+
 async function request(path, { method = "GET", body, auth = true } = {}) {
   const headers = { "Content-Type": "application/json" };
   const token = getToken();
@@ -21,6 +27,10 @@ async function request(path, { method = "GET", body, auth = true } = {}) {
     });
   } catch {
     throw new Error("No se pudo conectar con el servidor. Revisa tu conexión.");
+  }
+
+  if (response.status === 401 && auth && token && alExpirarSesion) {
+    alExpirarSesion();
   }
 
   if (response.status === 204) return null;
