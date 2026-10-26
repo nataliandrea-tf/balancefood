@@ -192,6 +192,7 @@ module Api
           get "/api/v1/expenses", headers: auth_header(@usuario)
 
           assert_equal 1, response.parsed_body["summary"]["dias_restantes_mes"]
+          assert_equal @usuario.current_balance, response.parsed_body["summary"]["presupuesto_diario"]
         end
       end
 
