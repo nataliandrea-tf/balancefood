@@ -6,7 +6,7 @@ class Expense < ApplicationRecord
                      numericality: { only_integer: true, greater_than: 0 }
   validates :spent_on, presence: true
   validate :no_supera_saldo
-    validates :menu_item, presence: { message: "no existe" }, if: :menu_item_id?
+  validates :menu_item, presence: { message: "no existe" }, if: :menu_item_id?
 
   scope :for_month, ->(date) { where(spent_on: date.beginning_of_month..date.end_of_month) }
 

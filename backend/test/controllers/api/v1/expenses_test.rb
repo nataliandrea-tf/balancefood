@@ -159,6 +159,34 @@ module Api
         assert_equal menu_items(:menu_dia).id, gasto.reload.menu_item_id
       end
 
+      test "sin month, el resumen usa solo el mes actual" do
+        Expense.create!(user: @usuario, amount: 1000, spent_on: 2.months.ago.to_date)
+
+        get "/api/v1/expenses", headers: auth_header(@usuario)
+
+        assert_equal 2, response.parsed_body["expenses"].size
+        assert_equal 3500, response.parsed_body["summary"]["total_gastado"]
+      end
+
+
+      test "con month, el resumen usa ese mes" do
+        Expense.create!(user: @usuario, amount: 1000, spent_on: 2.months.ago.to_date)
+
+        get "/api/v1/expenses", params: { month: 2.months.ago.strftime("%Y-%m") },
+                                headers: auth_header(@usuario)
+
+        assert_equal 1, response.parsed_body["expenses"].size
+        assert_equal 1000, response.parsed_body["summary"]["total_gastado"]
+      end
+
+      test "con month sin gastos, el resumen es cero" do
+        get "/api/v1/expenses", params: { month: "2020-01" },
+                                headers: auth_header(@usuario)
+
+        assert_equal 0, response.parsed_body["expenses"].size
+        assert_equal 0, response.parsed_body["summary"]["total_gastado"]
+      end
+
       private
 
       def auth_header(user)
