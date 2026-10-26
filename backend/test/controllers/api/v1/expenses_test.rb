@@ -148,6 +148,17 @@ module Api
         assert_response :bad_request
       end
 
+      test "update con menu_item inexistente responde 422" do
+        gasto = expenses(:almuerzo_lunes)
+
+        patch "/api/v1/expenses/#{gasto.id}",
+              params: { expense: { menu_item_id: 999_999 } },
+              headers: auth_header(@usuario), as: :json
+
+        assert_response :unprocessable_entity
+        assert_equal menu_items(:menu_dia).id, gasto.reload.menu_item_id
+      end
+
       private
 
       def auth_header(user)
