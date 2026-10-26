@@ -168,7 +168,6 @@ module Api
         assert_equal 3500, response.parsed_body["summary"]["total_gastado"]
       end
 
-
       test "con month, el resumen usa ese mes" do
         Expense.create!(user: @usuario, amount: 1000, spent_on: 2.months.ago.to_date)
 
