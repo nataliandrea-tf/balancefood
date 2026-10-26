@@ -12,6 +12,12 @@ module Api
         render json: restaurants.order(:name).map { |r| restaurant_json(r) }
       end
 
+
+      def mine
+        restaurants = current_user.restaurants.order(:name)
+        render json: restaurants.map { |r| restaurant_json(r) }
+      end
+
       def show
         restaurant = Restaurant.find(params[:id])
         render json: restaurant_json(restaurant, incluir_menu: true)
