@@ -108,7 +108,7 @@ module Api
         assert_response :not_found
       end
 
-       test "index con month malformado responde 400" do
+      test "index con month malformado responde 400" do
         get "/api/v1/expenses", params: { month: "abc" },
                                 headers: auth_header(@usuario)
 
@@ -117,7 +117,7 @@ module Api
                      response.parsed_body["error"]
       end
 
-            test "create con menu_item inexistente responde 422" do
+      test "create con menu_item inexistente responde 422" do
         post "/api/v1/expenses",
              params: { expense: { amount: 1000, spent_on: Date.current, menu_item_id: 999_999 } },
              headers: auth_header(@usuario), as: :json
@@ -125,6 +125,27 @@ module Api
         assert_response :unprocessable_entity
         assert_includes response.parsed_body["errors"], "Menu item no existe"
         assert_equal 32000, @usuario.reload.current_balance
+      end
+
+      test "index con month como arreglo responde 400" do
+        get "/api/v1/expenses", params: { month: [ "x" ] },
+                                headers: auth_header(@usuario)
+
+        assert_response :bad_request
+      end
+
+      test "index con mes imposible responde 400" do
+        get "/api/v1/expenses", params: { month: "2024-13" },
+                                headers: auth_header(@usuario)
+
+        assert_response :bad_request
+      end
+
+      test "index con solo un número responde 400" do
+        get "/api/v1/expenses", params: { month: "12" },
+                                headers: auth_header(@usuario)
+
+        assert_response :bad_request
       end
 
       private
