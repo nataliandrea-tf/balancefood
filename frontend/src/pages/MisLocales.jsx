@@ -5,7 +5,6 @@ const VACIO = { name: "", address: "", campus: "", category: "", description: ""
 const PLATO_VACIO = { name: "", description: "", price: "", category: "" };
 
 export default function MisLocales() {
-
   const [locales, setLocales] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
@@ -27,7 +26,7 @@ export default function MisLocales() {
     api
       .get("/restaurants/mine")
       .then((data) => {
-        if (!cancelado) setLocales(data)
+        if (!cancelado) setLocales(data);
       })
       .catch((err) => {
         if (!cancelado) setError(err.message);
