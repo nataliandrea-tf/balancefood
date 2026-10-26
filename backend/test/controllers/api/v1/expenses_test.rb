@@ -159,6 +159,15 @@ module Api
         assert_equal menu_items(:menu_dia).id, gasto.reload.menu_item_id
       end
 
+      test "el resumen solo considera los gastos del mes actual" do
+        Expense.create!(user: @usuario, amount: 1000, spent_on: 2.months.ago)
+
+        get "/api/v1/expenses", headers: auth_header(@usuario)
+
+        assert_equal 2, response.parsed_body["expenses"].size
+        assert_equal 3500, response.parsed_body["summary"]["total_gastado"]
+      end
+
       private
 
       def auth_header(user)
