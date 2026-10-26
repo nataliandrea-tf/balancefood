@@ -29,7 +29,7 @@ async function request(path, { method = "GET", body, auth = true } = {}) {
     throw new Error("No se pudo conectar con el servidor. Revisa tu conexión.");
   }
 
-  if (response.status === 401 && auth && token && alExpirarSesion) {
+  if (response.status === 401 && auth && token && token === getToken() && alExpirarSesion) {
     alExpirarSesion();
   }
 
