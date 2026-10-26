@@ -108,6 +108,15 @@ module Api
         assert_response :not_found
       end
 
+       test "index con month malformado responde 400" do
+        get "/api/v1/expenses", params: { month: "abc" },
+                                headers: auth_header(@usuario)
+
+        assert_response :bad_request
+        assert_equal "Parámetro month inválido. Usa el formato AAAA-MM",
+                     response.parsed_body["error"]
+      end
+
       private
 
       def auth_header(user)
