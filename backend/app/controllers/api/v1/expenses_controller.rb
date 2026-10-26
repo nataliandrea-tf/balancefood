@@ -6,7 +6,7 @@ module Api
 
       def index
         gastos = current_user.expenses
-          mes = nil
+        mes = nil
 
         if params[:month].present?
           mes = parsear_mes(params[:month])
