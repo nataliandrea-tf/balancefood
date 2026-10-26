@@ -117,6 +117,16 @@ module Api
                      response.parsed_body["error"]
       end
 
+            test "create con menu_item inexistente responde 422" do
+        post "/api/v1/expenses",
+             params: { expense: { amount: 1000, spent_on: Date.current, menu_item_id: 999_999 } },
+             headers: auth_header(@usuario), as: :json
+
+        assert_response :unprocessable_entity
+        assert_includes response.parsed_body["errors"], "Menu item no existe"
+        assert_equal 32000, @usuario.reload.current_balance
+      end
+
       private
 
       def auth_header(user)
