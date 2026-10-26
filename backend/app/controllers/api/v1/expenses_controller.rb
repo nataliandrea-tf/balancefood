@@ -6,7 +6,15 @@ module Api
 
       def index
         gastos = current_user.expenses
-        gastos = gastos.for_month(Date.parse(params[:month])) if params[:month].present?
+
+        if params[:month].present?
+          mes = parsear_mes(params[:month])
+          unless mes
+            return render json: { error: "Parámetro month inválido. Usa el formato AAAA-MM" },
+                          status: :bad_request
+          end
+          gastos = gastos.for_month(mes)
+        end
 
         render json: {
           expenses: gastos.order(spent_on: :desc).map { |g| expense_json(g) },
@@ -51,6 +59,14 @@ module Api
 
       def expense_params
         params.require(:expense).permit(:amount, :description, :spent_on, :menu_item_id)
+      end
+
+      def parsear_mes(valor)
+        return nil unless valor.is_a?(String)
+
+        Date.strptime(valor, "%Y-%m")
+      rescue Date::Error
+        nil
       end
 
       def expense_json(gasto)
