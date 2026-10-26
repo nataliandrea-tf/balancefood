@@ -6,7 +6,7 @@ class Expense < ApplicationRecord
                      numericality: { only_integer: true, greater_than: 0 }
   validates :spent_on, presence: true
   validate :no_supera_saldo
-  validates :menu_item, presence: { message: "no existe" }, if: :menu_item_id?
+    validates :menu_item, presence: { message: "no existe" }, if: :menu_item_id?
 
   scope :for_month, ->(date) { where(spent_on: date.beginning_of_month..date.end_of_month) }
 
@@ -19,7 +19,7 @@ class Expense < ApplicationRecord
   def no_supera_saldo
     return if user.nil? || user.current_balance.nil? || amount.nil?
 
-      disponible = user.current_balance + amount_in_database.to_i
+    disponible = user.current_balance + amount_in_database.to_i
     return if amount <= disponible
 
     errors.add(:amount, "supera tu saldo disponible")
