@@ -6,6 +6,7 @@ module Api
 
       def index
         gastos = current_user.expenses
+          mes = nil
 
         if params[:month].present?
           mes = parsear_mes(params[:month])
@@ -18,7 +19,7 @@ module Api
 
         render json: {
           expenses: gastos.order(spent_on: :desc).map { |g| expense_json(g) },
-          summary: resumen(gastos)
+          summary: resumen(current_user.expenses.for_month(mes || Date.current))
         }
       end
 
