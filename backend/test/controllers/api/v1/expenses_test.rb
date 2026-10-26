@@ -168,7 +168,6 @@ module Api
         assert_equal 3500, response.parsed_body["summary"]["total_gastado"]
       end
 
-
       test "con month, el resumen usa ese mes" do
         Expense.create!(user: @usuario, amount: 1000, spent_on: 2.months.ago.to_date)
 
@@ -185,6 +184,16 @@ module Api
 
         assert_equal 0, response.parsed_body["expenses"].size
         assert_equal 0, response.parsed_body["summary"]["total_gastado"]
+      end
+
+      test "los días restantes se calculan en hora de Chile" do
+        # 23:30 del 30 de septiembre en Chile = 02:30 del 1 de octubre en UTC
+        travel_to Time.utc(2026, 10, 1, 2, 30) do
+          get "/api/v1/expenses", headers: auth_header(@usuario)
+
+          assert_equal 1, response.parsed_body["summary"]["dias_restantes_mes"]
+          assert_equal @usuario.current_balance, response.parsed_body["summary"]["presupuesto_diario"]
+        end
       end
 
       private
