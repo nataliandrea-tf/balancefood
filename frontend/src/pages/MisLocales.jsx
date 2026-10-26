@@ -1,13 +1,10 @@
 import { useState, useEffect } from "react";
 import { api } from "../api/client";
-import { useAuth } from "../context/useAuth";
 
 const VACIO = { name: "", address: "", campus: "", category: "", description: "" };
 const PLATO_VACIO = { name: "", description: "", price: "", category: "" };
 
 export default function MisLocales() {
-  const { user } = useAuth();
-  const userId = user.id;
 
   const [locales, setLocales] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -28,9 +25,9 @@ export default function MisLocales() {
     let cancelado = false;
 
     api
-      .get("/restaurants", { auth: false })
+      .get("/restaurants/mine")
       .then((data) => {
-        if (!cancelado) setLocales(data.filter((l) => l.user_id === userId));
+        if (!cancelado) setLocales(data)
       })
       .catch((err) => {
         if (!cancelado) setError(err.message);
@@ -42,7 +39,7 @@ export default function MisLocales() {
     return () => {
       cancelado = true;
     };
-  }, [version, userId]);
+  }, [version]);
 
   function recargar() {
     setVersion((v) => v + 1);
