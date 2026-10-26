@@ -5,7 +5,7 @@ module Api
       before_action :set_expense, only: [ :show, :update, :destroy ]
 
       def index
-          gastos = current_user.expenses
+        gastos = current_user.expenses
 
         if params[:month].present?
           mes = parsear_mes(params[:month])
@@ -62,7 +62,9 @@ module Api
       end
 
       def parsear_mes(valor)
-        Date.parse(valor)
+        return nil unless valor.is_a?(String)
+
+        Date.strptime(valor, "%Y-%m")
       rescue Date::Error
         nil
       end
