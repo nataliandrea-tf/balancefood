@@ -11,6 +11,13 @@ export function AuthProvider({ children }) {
   );
 
   useEffect(() => {
+    onSesionExpirada(() => {
+      localStorage.removeItem(CLAVE_TOKEN);
+      setUser(null);
+    });
+  }, []);
+
+  useEffect(() => {
     if (!localStorage.getItem(CLAVE_TOKEN)) return;
 
     api
