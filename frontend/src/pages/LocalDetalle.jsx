@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../context/useAuth";
+import { hoyLocal } from "../utils/fechas";
 
 export default function LocalDetalle() {
   const { id } = useParams();
@@ -47,7 +48,7 @@ export default function LocalDetalle() {
         expense: {
           amount: item.price,
           description: `${item.name} — ${local.name}`,
-          spent_on: new Date().toISOString().slice(0, 10),
+          spent_on: hoyLocal(),
           menu_item_id: item.id,
         },
       });
