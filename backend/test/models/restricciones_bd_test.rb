@@ -26,4 +26,22 @@ class RestriccionesBdTest < ActiveSupport::TestCase
       expenses(:almuerzo_lunes).update_column(:spent_on, nil)
     end
   end
+
+  test "la BD rechaza un precio negativo" do
+    assert_raises(ActiveRecord::StatementInvalid) do
+      menu_items(:menu_dia).update_column(:price, -1)
+    end
+  end
+
+  test "la BD rechaza un gasto de monto cero" do
+    assert_raises(ActiveRecord::StatementInvalid) do
+      expenses(:almuerzo_lunes).update_column(:amount, 0)
+    end
+  end
+
+  test "la BD rechaza un saldo negativo" do
+    assert_raises(ActiveRecord::StatementInvalid) do
+      users(:natalia).update_column(:current_balance, -1)
+    end
+  end
 end
