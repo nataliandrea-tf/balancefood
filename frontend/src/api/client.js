@@ -8,6 +8,9 @@ let alExpirarSesion = null;
 
 export function onSesionExpirada(callback) {
   alExpirarSesion = callback;
+  return () => {
+    alExpirarSesion = null;
+  };
 }
 
 async function request(path, { method = "GET", body, auth = true } = {}) {
