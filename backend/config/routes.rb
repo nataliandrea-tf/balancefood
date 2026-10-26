@@ -13,6 +13,7 @@ Rails.application.routes.draw do
       get "auth/me", to: "sessions#me"
 
       resources :restaurants do
+        get :mine, on: :collection
         resources :menu_items, only: [ :index, :create ]
       end
 

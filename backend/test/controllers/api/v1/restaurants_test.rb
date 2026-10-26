@@ -100,6 +100,23 @@ module Api
         assert_response :not_found
       end
 
+      test "mine requiere autenticacion" do
+        get "/api/v1/restaurants/mine"
+
+        assert_response :unauthorized
+      end
+
+      test "mine devuelve solo los locales del usuario autenticado" do
+        natalia = users(:natalia)
+        propio = natalia.restaurants.create!(name: "Café Natalia", address: "Macul 123",
+                                             campus: "Campus Macul")
+
+        get "/api/v1/restaurants/mine", headers: auth_header(natalia)
+
+        assert_response :success
+        assert_equal [ propio.id ], response.parsed_body.map { |r| r["id"] }
+      end
+
       private
 
       def auth_header(user)
