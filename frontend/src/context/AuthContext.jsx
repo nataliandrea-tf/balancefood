@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { api } from "../api/client";
+import { api, onSesionExpirada } from "../api/client";
 import { AuthContext } from "./auth-context";
 
 const CLAVE_TOKEN = "balancefood_token";
@@ -9,6 +9,13 @@ export function AuthProvider({ children }) {
   const [cargando, setCargando] = useState(() =>
     Boolean(localStorage.getItem(CLAVE_TOKEN))
   );
+
+  useEffect(() => {
+    return onSesionExpirada(() => {
+      localStorage.removeItem(CLAVE_TOKEN);
+      setUser(null);
+    });
+  }, []);
 
   useEffect(() => {
     if (!localStorage.getItem(CLAVE_TOKEN)) return;

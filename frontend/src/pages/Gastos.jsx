@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { api } from "../api/client";
 import { useAuth } from "../context/useAuth";
+import { hoyLocal } from "../utils/fechas";
 
-const HOY = new Date().toISOString().slice(0, 10);
-const VACIO = { amount: "", description: "", spent_on: HOY };
+function formVacio() {
+  return { amount: "", description: "", spent_on: hoyLocal() };
+}
 
 export default function Gastos() {
   const { actualizarSaldo } = useAuth();
@@ -15,7 +17,7 @@ export default function Gastos() {
   const [mensaje, setMensaje] = useState(null);
   const [version, setVersion] = useState(0);
 
-  const [form, setForm] = useState(VACIO);
+  const [form, setForm] = useState(formVacio);
   const [editandoId, setEditandoId] = useState(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -79,7 +81,7 @@ export default function Gastos() {
         setMensaje("Gasto registrado.");
       }
 
-      setForm(VACIO);
+      setForm(formVacio());
       setEditandoId(null);
       recargar();
     } catch (err) {
@@ -185,7 +187,7 @@ export default function Gastos() {
               <button
                 type="button"
                 className="secundario"
-                onClick={() => { setEditandoId(null); setForm(VACIO); }}
+                onClick={() => { setEditandoId(null); setForm(formVacio()); }}
               >
                 Cancelar
               </button>

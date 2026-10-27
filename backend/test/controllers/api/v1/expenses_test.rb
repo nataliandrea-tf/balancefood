@@ -71,13 +71,13 @@ module Api
         assert_response :unprocessable_entity
       end
 
-      test "el saldo nunca queda negativo" do
+      test "rechaza un gasto que supera el saldo disponible" do
         post "/api/v1/expenses",
              params: { expense: { amount: 999_999, spent_on: Date.current } },
              headers: auth_header(@usuario), as: :json
 
-        assert_response :created
-        assert_equal 0, @usuario.reload.current_balance
+        assert_response :unprocessable_entity
+        assert_equal 32000, @usuario.reload.current_balance
       end
 
       test "destroy devuelve el monto al saldo" do
@@ -106,6 +106,94 @@ module Api
         end
 
         assert_response :not_found
+      end
+
+      test "index con month malformado responde 400" do
+        get "/api/v1/expenses", params: { month: "abc" },
+                                headers: auth_header(@usuario)
+
+        assert_response :bad_request
+        assert_equal "Parámetro month inválido. Usa el formato AAAA-MM",
+                     response.parsed_body["error"]
+      end
+
+      test "create con menu_item inexistente responde 422" do
+        post "/api/v1/expenses",
+             params: { expense: { amount: 1000, spent_on: Date.current, menu_item_id: 999_999 } },
+             headers: auth_header(@usuario), as: :json
+
+        assert_response :unprocessable_entity
+        assert_includes response.parsed_body["errors"], "Menu item no existe"
+        assert_equal 32000, @usuario.reload.current_balance
+      end
+
+      test "index con month como arreglo responde 400" do
+        get "/api/v1/expenses", params: { month: [ "x" ] },
+                                headers: auth_header(@usuario)
+
+        assert_response :bad_request
+      end
+
+      test "index con mes imposible responde 400" do
+        get "/api/v1/expenses", params: { month: "2024-13" },
+                                headers: auth_header(@usuario)
+
+        assert_response :bad_request
+      end
+
+      test "index con solo un número responde 400" do
+        get "/api/v1/expenses", params: { month: "12" },
+                                headers: auth_header(@usuario)
+
+        assert_response :bad_request
+      end
+
+      test "update con menu_item inexistente responde 422" do
+        gasto = expenses(:almuerzo_lunes)
+
+        patch "/api/v1/expenses/#{gasto.id}",
+              params: { expense: { menu_item_id: 999_999 } },
+              headers: auth_header(@usuario), as: :json
+
+        assert_response :unprocessable_entity
+        assert_equal menu_items(:menu_dia).id, gasto.reload.menu_item_id
+      end
+
+      test "sin month, el resumen usa solo el mes actual" do
+        Expense.create!(user: @usuario, amount: 1000, spent_on: 2.months.ago.to_date)
+
+        get "/api/v1/expenses", headers: auth_header(@usuario)
+
+        assert_equal 2, response.parsed_body["expenses"].size
+        assert_equal 3500, response.parsed_body["summary"]["total_gastado"]
+      end
+
+      test "con month, el resumen usa ese mes" do
+        Expense.create!(user: @usuario, amount: 1000, spent_on: 2.months.ago.to_date)
+
+        get "/api/v1/expenses", params: { month: 2.months.ago.strftime("%Y-%m") },
+                                headers: auth_header(@usuario)
+
+        assert_equal 1, response.parsed_body["expenses"].size
+        assert_equal 1000, response.parsed_body["summary"]["total_gastado"]
+      end
+
+      test "con month sin gastos, el resumen es cero" do
+        get "/api/v1/expenses", params: { month: "2020-01" },
+                                headers: auth_header(@usuario)
+
+        assert_equal 0, response.parsed_body["expenses"].size
+        assert_equal 0, response.parsed_body["summary"]["total_gastado"]
+      end
+
+      test "los días restantes se calculan en hora de Chile" do
+        # 23:30 del 30 de septiembre en Chile = 02:30 del 1 de octubre en UTC
+        travel_to Time.utc(2026, 10, 1, 2, 30) do
+          get "/api/v1/expenses", headers: auth_header(@usuario)
+
+          assert_equal 1, response.parsed_body["summary"]["dias_restantes_mes"]
+          assert_equal @usuario.current_balance, response.parsed_body["summary"]["presupuesto_diario"]
+        end
       end
 
       private

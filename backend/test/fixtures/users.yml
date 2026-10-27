@@ -9,5 +9,5 @@ comerciante:
   email: local@ejemplo.cl
   password_digest: <%= BCrypt::Password.create("secreta123") %>
   name: Dueño del local
-  monthly_balance: 0
-  current_balance: 0
+  monthly_balance: 50000
+  current_balance: 50000
