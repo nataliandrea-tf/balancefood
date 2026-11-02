@@ -7,17 +7,18 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
-      post "auth/signup", to: "users#create"
-      post "auth/login", to: "sessions#create"
-      delete "auth/logout", to: "sessions#destroy"
-      get "auth/me", to: "sessions#me"
-
+      post "auth/signup", to: "users#create"  ##registrarse
+      post "auth/login", to: "sessions#create" ##iniciar seción
+      delete "auth/logout", to: "sessions#destroy" ## cerrar sesión
+      get "auth/me", to: "sessions#me"     ##muestra nombre y saldo
+##Locales: Ver, editar, crear y borrar lócales
       resources :restaurants do
         get :mine, on: :collection
-        resources :menu_items, only: [ :index, :create ]
+        resources :menu_items, only: [ :index, :create ] 
       end
-
+##Platos: Ver, editar, crear y borrar un plato
       resources :menu_items, only: [ :show, :update, :destroy ]
+##Gastos: ver, crear, editar y borrar
       resources :expenses
     end
   end
