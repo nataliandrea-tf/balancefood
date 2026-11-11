@@ -454,7 +454,7 @@ El Nginx que vive dentro del contenedor del frontend (`frontend/nginx.conf`) sol
 | Hito | Alcance | Estado |
 |---|---|:---:|
 | **Tarea 0** | Propuesta y planificación | ✅ Aprobada |
-| **Evaluación 1** | Web: API, base de datos, autenticación, 3 CRUD y deploy | 🟡 En desarrollo |
+| **Evaluación 1** | Web: API, base de datos, autenticación, 3 CRUD y deploy | ✅ Aprobada  |
 | **Evaluación 2** | Móvil: Flutter con geolocalización | ⚪ Pendiente |
 | **Evaluación 3** | Calidad, testing, performance y DevOps | ⚪ Pendiente |
 
