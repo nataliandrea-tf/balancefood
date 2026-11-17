@@ -19,7 +19,7 @@ module Api
 
         render json: {
           expenses: gastos.order(spent_on: :desc).map { |g| expense_json(g) },
-          summary: resumen(current_user.expenses.for_month(mes || Date.current))
+          summary: resumen(mes || Date.current)
         }
       end
 
@@ -74,9 +74,9 @@ module Api
         gasto.slice(:id, :amount, :description, :spent_on, :menu_item_id)
       end
 
-      def resumen(gastos)
-        total = gastos.sum(:amount)
-        saldo = current_user.current_balance
+      def resumen(fecha)
+        total = current_user.expenses.for_month(fecha).sum(:amount)
+        saldo = current_user.saldo_actual(fecha)
 
         {
           total_gastado: total,

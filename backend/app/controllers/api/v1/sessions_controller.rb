@@ -25,7 +25,13 @@ module Api
       private
 
       def user_json(user)
-        user.slice(:id, :email, :name, :monthly_balance, :current_balance)
+        {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          monthly_balance: user.monthly_balance,
+          current_balance: user.saldo_actual
+        }
       end
     end
   end

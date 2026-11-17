@@ -23,40 +23,59 @@ class ExpenseTest < ActiveSupport::TestCase
     assert_not_includes resultado, antiguo
   end
 
-  test "editar el monto ajusta el saldo por la diferencia" do
-  natalia = users(:natalia) # saldo inicial 32000
-  gasto = Expense.create!(user: natalia, amount: 3000, spent_on: Date.current)
-  assert_equal 29000, natalia.reload.current_balance
+  test "registrar un gasto baja el saldo disponible por su monto" do
+    natalia = users(:natalia)
+    antes = natalia.saldo_actual
 
-  gasto.update!(amount: 5000)
-  assert_equal 27000, natalia.reload.current_balance
-end
+    Expense.create!(user: natalia, amount: 3000, spent_on: Date.current)
 
+    assert_equal antes - 3000, natalia.saldo_actual
+  end
+
+  test "editar el monto recalcula el saldo disponible" do
+    natalia = users(:natalia)
+    antes = natalia.saldo_actual
+    gasto = Expense.create!(user: natalia, amount: 3000, spent_on: Date.current)
+
+    gasto.update!(amount: 5000)
+
+    assert_equal antes - 5000, natalia.saldo_actual
+  end
+
+  test "eliminar un gasto devuelve su monto al saldo disponible" do
+    natalia = users(:natalia)
+    antes = natalia.saldo_actual
+    gasto = Expense.create!(user: natalia, amount: 3000, spent_on: Date.current)
+
+    gasto.destroy
+
+    assert_equal antes, natalia.saldo_actual
+  end
+
+  test "no permite un gasto mayor al saldo disponible del mes" do
+    natalia = users(:natalia)
+    disponible = natalia.saldo_actual
+
+    gasto = Expense.new(user: natalia, amount: disponible + 1, spent_on: Date.current)
+
+    assert_not gasto.valid?
+  end
 
   test "no permite editar un gasto a un monto mayor al saldo disponible" do
     natalia = users(:natalia)
     gasto = Expense.create!(user: natalia, amount: 3000, spent_on: Date.current)
-    saldo = natalia.reload.current_balance
+    disponible = natalia.saldo_actual + gasto.amount
 
-    assert_not gasto.update(amount: saldo + 3000 + 1)
-    assert_equal saldo, natalia.reload.current_balance
+    assert_not gasto.update(amount: disponible + 1)
   end
 
-  test "bajar el monto de un gasto devuelve la diferencia al saldo" do
+  test "editar solo la fecha dentro del mes no cambia el saldo" do
     natalia = users(:natalia)
-    gasto = Expense.create!(user: natalia, amount: 5000, spent_on: Date.current)
-    saldo = natalia.reload.current_balance
+    gasto = Expense.create!(user: natalia, amount: 3000, spent_on: Date.current.end_of_month)
+    antes = natalia.saldo_actual
 
-    gasto.update!(amount: 2000)
-    assert_equal saldo + 3000, natalia.reload.current_balance
-  end
+    gasto.update!(spent_on: Date.current.beginning_of_month)
 
-  test "editar solo la fecha no modifica el saldo" do
-    natalia = users(:natalia)
-    gasto = Expense.create!(user: natalia, amount: 3000, spent_on: Date.current)
-    saldo = natalia.reload.current_balance
-
-    gasto.update!(spent_on: Date.yesterday)
-    assert_equal saldo, natalia.reload.current_balance
+    assert_equal antes, natalia.saldo_actual
   end
 end
