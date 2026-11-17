@@ -20,6 +20,11 @@ Rails.application.routes.draw do
       resources :menu_items, only: [ :show, :update, :destroy ]
       ## Gastos: ver, crear, editar y borrar
       resources :expenses
+
+      ## Administración: solo accesible para usuarios con rol admin
+      namespace :admin do
+        resources :users, only: [ :index ]
+      end
     end
   end
 end

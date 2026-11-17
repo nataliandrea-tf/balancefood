@@ -10,6 +10,21 @@ class ApplicationController < ActionController::API
     render json: { error: "No autorizado" }, status: :unauthorized
   end
 
+  # Autorización por rol: solo un administrador pasa. Un usuario autenticado sin
+  # el rol recibe 403; uno no autenticado ya fue cortado antes por authenticate!.
+  def require_admin!
+    return if current_user&.admin?
+
+    render json: { error: "Acceso denegado" }, status: :forbidden
+  end
+
+  # Permite la acción solo al dueño del recurso o a un administrador.
+  def autorizar_dueno_o_admin!(recurso)
+    return if current_user&.admin? || recurso.user_id == current_user&.id
+
+    render json: { error: "No tienes permiso para esta acción" }, status: :forbidden
+  end
+
   def current_user
     return @current_user if defined?(@current_user)
 
