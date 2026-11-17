@@ -88,12 +88,10 @@ end
 # ---------------------------------------------------------------------------
 #
 # Se crean solo si el estudiante aún no tiene gastos registrados, para no
-# alterar el saldo en ejecuciones sucesivas. Los callbacks del modelo Expense
-# descuentan cada monto de current_balance automáticamente.
+# duplicarlos en ejecuciones sucesivas. El saldo no se guarda: se calcula como
+# monto mensual menos los gastos del mes (ver User#saldo_actual).
 
 if estudiante.expenses.none?
-  estudiante.update!(current_balance: estudiante.monthly_balance)
-
   churrasco = MenuItem.find_by(name: "Churrasco Italiano")
   completo  = MenuItem.find_by(name: "Completo Italiano")
 
@@ -110,4 +108,4 @@ puts
 puts "Listo."
 puts "  Estudiante: demo@utem.cl / balancefood2026"
 puts "  Locatario:  locatario@balancefood.cl / balancefood2026"
-puts "  Saldo del estudiante: $#{estudiante.reload.current_balance}"
+puts "  Saldo del estudiante: $#{estudiante.saldo_actual}"

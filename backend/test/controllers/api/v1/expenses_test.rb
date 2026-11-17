@@ -42,7 +42,7 @@ module Api
       end
 
       test "create registra el gasto y descuenta el saldo" do
-        saldo_previo = @usuario.current_balance
+        saldo_previo = @usuario.saldo_actual
 
         assert_difference "Expense.count", 1 do
           post "/api/v1/expenses",
@@ -51,7 +51,7 @@ module Api
         end
 
         assert_response :created
-        assert_equal saldo_previo - 2000, @usuario.reload.current_balance
+        assert_equal saldo_previo - 2000, @usuario.saldo_actual
       end
 
       test "create acepta gasto sin menu_item" do
@@ -72,22 +72,24 @@ module Api
       end
 
       test "rechaza un gasto que supera el saldo disponible" do
+        saldo_previo = @usuario.saldo_actual
+
         post "/api/v1/expenses",
              params: { expense: { amount: 999_999, spent_on: Date.current } },
              headers: auth_header(@usuario), as: :json
 
         assert_response :unprocessable_entity
-        assert_equal 32000, @usuario.reload.current_balance
+        assert_equal saldo_previo, @usuario.saldo_actual
       end
 
       test "destroy devuelve el monto al saldo" do
         gasto = expenses(:almuerzo_lunes)
-        saldo_previo = @usuario.current_balance
+        saldo_previo = @usuario.saldo_actual
 
         delete "/api/v1/expenses/#{gasto.id}", headers: auth_header(@usuario)
 
         assert_response :no_content
-        assert_equal saldo_previo + gasto.amount, @usuario.reload.current_balance
+        assert_equal saldo_previo + gasto.amount, @usuario.saldo_actual
       end
 
       test "no permite ver un gasto ajeno" do
@@ -124,7 +126,7 @@ module Api
 
         assert_response :unprocessable_entity
         assert_includes response.parsed_body["errors"], "Menu item no existe"
-        assert_equal 32000, @usuario.reload.current_balance
+        assert_equal 28500, @usuario.saldo_actual
       end
 
       test "index con month como arreglo responde 400" do
@@ -192,7 +194,7 @@ module Api
           get "/api/v1/expenses", headers: auth_header(@usuario)
 
           assert_equal 1, response.parsed_body["summary"]["dias_restantes_mes"]
-          assert_equal @usuario.current_balance, response.parsed_body["summary"]["presupuesto_diario"]
+          assert_equal @usuario.saldo_actual, response.parsed_body["summary"]["presupuesto_diario"]
         end
       end
 
