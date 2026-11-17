@@ -1,0 +1,16 @@
+# Advisories ignorados temporalmente en la auditoría de dependencias.
+#
+# puma 8.0.2 — advisories publicados el 2026-11-17, aún sin versión parchada
+# en RubyGems (bundler-audit sugiere >= 8.0.3 / ~> 7.2.2, todavía no liberadas).
+# Riesgo bajo en este proyecto: el TLS lo termina Nginx (no puma) y no se usa
+# el control server de pumactl. Quitar estas entradas cuando puma publique el
+# fix y se pueda actualizar.
+---
+ignore:
+  - GHSA-86xc-wrr9-xmmq
+  - GHSA-jm4r-w4xx-qxw7
+  - GHSA-m5xw-3hrw-qcmf
+  - GHSA-r885-m39c-939g
+  - GHSA-rf6g-xhmp-gm7v
+  - GHSA-x646-wp7c-h9mg
+  - GHSA-xw3h-pgr9-3vg7
