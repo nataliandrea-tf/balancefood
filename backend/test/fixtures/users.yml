@@ -2,6 +2,7 @@ natalia:
   email: natalia@utem.cl
   password_digest: <%= BCrypt::Password.create("secreta123") %>
   name: Natalia Torres
+  role: estudiante
   monthly_balance: 32000
   current_balance: 32000
 
@@ -9,5 +10,14 @@ comerciante:
   email: local@ejemplo.cl
   password_digest: <%= BCrypt::Password.create("secreta123") %>
   name: Dueño del local
+  role: estudiante
   monthly_balance: 50000
   current_balance: 50000
+
+admin:
+  email: admin@ejemplo.cl
+  password_digest: <%= BCrypt::Password.create("secreta123") %>
+  name: Admin Demo
+  role: admin
+  monthly_balance: 0
+  current_balance: 0
