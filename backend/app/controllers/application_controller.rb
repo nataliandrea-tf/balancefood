@@ -6,7 +6,18 @@ class ApplicationController < ActionController::API
   # Cuando una policy de Pundit niega la acción, se responde 403.
   rescue_from Pundit::NotAuthorizedError, with: :forbidden
 
+  # Atribuye los registros de auditoría (gema audited) al usuario autenticado.
+  around_action :auditar_como_usuario
+
   private
+
+  def auditar_como_usuario(&block)
+    if current_user
+      Audited.audit_class.as_user(current_user, &block)
+    else
+      yield
+    end
+  end
 
   def authenticate!
     return if current_user
