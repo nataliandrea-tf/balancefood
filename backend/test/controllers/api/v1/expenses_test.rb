@@ -198,6 +198,25 @@ module Api
         end
       end
 
+      test "historial devuelve las auditorias del gasto" do
+        gasto = Expense.create!(user: @usuario, amount: 2000, spent_on: Date.current)
+        gasto.update!(amount: 3000)
+
+        get "/api/v1/expenses/#{gasto.id}/historial", headers: auth_header(@usuario)
+
+        assert_response :success
+        assert_operator response.parsed_body.size, :>=, 2
+        assert_equal "create", response.parsed_body.first["action"]
+      end
+
+      test "historial de un gasto ajeno responde 404" do
+        gasto = Expense.create!(user: @ajeno, amount: 2000, spent_on: Date.current)
+
+        get "/api/v1/expenses/#{gasto.id}/historial", headers: auth_header(@usuario)
+
+        assert_response :not_found
+      end
+
       private
 
       def auth_header(user)

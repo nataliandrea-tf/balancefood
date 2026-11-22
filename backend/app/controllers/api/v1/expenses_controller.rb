@@ -2,7 +2,7 @@ module Api
   module V1
     class ExpensesController < ApplicationController
       before_action :authenticate!
-      before_action :set_expense, only: [ :show, :update, :destroy ]
+      before_action :set_expense, only: [ :show, :update, :destroy, :historial ]
 
       def index
         gastos = current_user.expenses
@@ -52,6 +52,12 @@ module Api
         head :no_content
       end
 
+      # Historial de auditoría del gasto: cada creación/edición/borrado, con
+      # quién lo hizo y qué cambió (gracias a la gema audited).
+      def historial
+        render json: @expense.audits.order(:version).map { |a| audit_json(a) }
+      end
+
       private
 
       def set_expense
@@ -72,6 +78,16 @@ module Api
 
       def expense_json(gasto)
         gasto.slice(:id, :amount, :description, :spent_on, :menu_item_id)
+      end
+
+      def audit_json(audit)
+        {
+          version: audit.version,
+          action: audit.action,
+          changes: audit.audited_changes,
+          user: audit.user&.name,
+          created_at: audit.created_at
+        }
       end
 
       def resumen(fecha)

@@ -9,6 +9,9 @@ gem "puma", ">= 5.0"
 
 # Autorizacion por policies (roles)
 gem "pundit"
+
+# Historial de cambios (auditoria) de los gastos
+gem "audited"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 # gem "jbuilder"
 

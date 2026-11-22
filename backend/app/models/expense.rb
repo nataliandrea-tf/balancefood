@@ -1,4 +1,8 @@
 class Expense < ApplicationRecord
+  # Registra en la tabla audits cada creación, edición y borrado del gasto
+  # (quién lo hizo y qué cambió). Ver GET /expenses/:id/historial.
+  audited
+
   belongs_to :user
   belongs_to :menu_item, optional: true
 
