@@ -3,7 +3,6 @@ module Api
     class RestaurantsController < ApplicationController
       before_action :authenticate!, except: [ :index, :show ]
       before_action :set_restaurant, only: [ :update, :destroy ]
-      before_action :autorizar_gestion!, only: [ :update, :destroy ]
 
       def index
         restaurants = Restaurant.all
@@ -35,6 +34,8 @@ module Api
       end
 
       def update
+        authorize @restaurant
+
         if @restaurant.update(restaurant_params)
           render json: restaurant_json(@restaurant)
         else
@@ -44,6 +45,8 @@ module Api
       end
 
       def destroy
+        authorize @restaurant
+
         @restaurant.destroy
         head :no_content
       end
@@ -52,12 +55,6 @@ module Api
 
       def set_restaurant
         @restaurant = Restaurant.find(params[:id])
-      end
-
-      # Restricción por propiedad + override por rol: el dueño gestiona su local;
-      # un admin puede gestionar cualquiera; cualquier otro recibe 403.
-      def autorizar_gestion!
-        autorizar_dueno_o_admin!(@restaurant)
       end
 
       def restaurant_params
