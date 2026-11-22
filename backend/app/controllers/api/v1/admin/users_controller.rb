@@ -3,12 +3,13 @@ module Api
     module Admin
       # Endpoint de administración: lista todos los usuarios del sistema.
       # Restringido por rol: authenticate! corta a los no autenticados (401) y
-      # require_admin! a los que no son admin (403).
+      # la UserPolicy (vía authorize) a los que no son admin (403).
       class UsersController < ApplicationController
         before_action :authenticate!
-        before_action :require_admin!
 
         def index
+          authorize User, :index?
+
           usuarios = User.order(:name).map { |u| user_json(u) }
           render json: usuarios
         end
