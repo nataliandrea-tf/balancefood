@@ -1,6 +1,10 @@
 class User < ApplicationRecord
   has_secure_password
 
+  # Roles del sistema. estudiante es el valor por defecto; admin puede gestionar
+  # recursos de cualquier usuario y acceder a los endpoints de administración.
+  enum :role, { estudiante: 0, admin: 1 }
+
   has_many :restaurants, dependent: :destroy
   has_many :expenses, dependent: :destroy
 

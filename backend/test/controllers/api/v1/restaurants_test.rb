@@ -78,7 +78,7 @@ module Api
               params: { restaurant: { description: "Hackeado" } },
               headers: auth_header(users(:natalia)), as: :json
 
-        assert_response :not_found
+        assert_response :forbidden
         assert_equal original, local.reload.description
       end
 
@@ -97,7 +97,16 @@ module Api
                  headers: auth_header(users(:natalia))
         end
 
-        assert_response :not_found
+        assert_response :forbidden
+      end
+
+      test "un admin puede eliminar un local ajeno" do
+        assert_difference "Restaurant.count", -1 do
+          delete "/api/v1/restaurants/#{restaurants(:casino_central).id}",
+                 headers: auth_header(users(:admin))
+        end
+
+        assert_response :no_content
       end
 
       test "mine requiere autenticacion" do

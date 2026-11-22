@@ -32,6 +32,17 @@ comerciante.assign_attributes(
 )
 comerciante.save!
 
+# Usuario administrador de prueba (uno por rol, como pide la Tarea 2).
+admin = User.find_or_initialize_by(email: "admin@balancefood.cl")
+admin.assign_attributes(
+  name: "Admin Demo",
+  password: "balancefood2026",
+  role: :admin,
+  monthly_balance: 0,
+  current_balance: 0
+)
+admin.save!
+
 puts "  #{User.count} usuarios"
 
 # ---------------------------------------------------------------------------
