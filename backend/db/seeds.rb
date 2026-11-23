@@ -18,8 +18,8 @@ estudiante = User.find_or_initialize_by(email: "demo@utem.cl")
 estudiante.assign_attributes(
   name: "Estudiante Demo",
   password: "balancefood2026",
-  monthly_balance: 32_000,
-  current_balance: 32_000
+  monthly_balance: 48_000,
+  current_balance: 48_000
 )
 estudiante.save!
 

@@ -78,4 +78,17 @@ class ExpenseTest < ActiveSupport::TestCase
 
     assert_equal antes, natalia.saldo_actual
   end
+
+  test "crear y editar un gasto genera registros de auditoria" do
+    natalia = users(:natalia)
+    gasto = Expense.create!(user: natalia, amount: 2000, spent_on: Date.current)
+
+    assert_equal 1, gasto.audits.count
+    assert_equal "create", gasto.audits.last.action
+
+    gasto.update!(amount: 3000)
+
+    assert_equal 2, gasto.audits.count
+    assert_equal "update", gasto.audits.last.action
+  end
 end

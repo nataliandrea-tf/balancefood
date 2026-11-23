@@ -18,8 +18,10 @@ Rails.application.routes.draw do
       end
       ## Platos: Ver, editar, crear y borrar un plato
       resources :menu_items, only: [ :show, :update, :destroy ]
-      ## Gastos: ver, crear, editar y borrar
-      resources :expenses
+      ## Gastos: ver, crear, editar y borrar; historial con el registro de auditoría
+      resources :expenses do
+        get :historial, on: :member
+      end
 
       ## Administración: solo accesible para usuarios con rol admin
       namespace :admin do
