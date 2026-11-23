@@ -33,6 +33,10 @@ pipeline {
         disableConcurrentBuilds()
         timeout(time: 45, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '20'))
+        // El checkout implícito falla al limpiar el workspace cuando quedaron
+        // archivos de dueño root (los dejan los contenedores de build). Se
+        // desactiva y el checkout se hace en la etapa Checkout, tras limpiar.
+        skipDefaultCheckout(true)
     }
 
     environment {
@@ -59,6 +63,15 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                // Los contenedores de build (que corren como root) dejan archivos
+                // de dueño root en el workspace, y Jenkins —que corre sin privilegios—
+                // no puede borrarlos, lo que rompía el checkout. Antes de clonar,
+                // se limpia el workspace con un contenedor root que sí puede. Se
+                // reutiliza el volumen del contenedor de Jenkins (--volumes-from).
+                sh '''
+                    docker run --rm -u 0:0 --volumes-from "$(hostname)" -w "$WORKSPACE" \
+                      "$POSTGRES_IMAGE" sh -c 'rm -rf ./* ./.[!.]* 2>/dev/null; true' || true
+                '''
                 checkout scm
                 script {
                     def safeBranch = env.BRANCH_NAME.replaceAll(/[^A-Za-z0-9_.-]/, '-').toLowerCase()
