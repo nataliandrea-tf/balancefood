@@ -1,6 +1,10 @@
 class User < ApplicationRecord
   has_secure_password
 
+  # Roles del sistema. estudiante es el valor por defecto; admin puede gestionar
+  # recursos de cualquier usuario y acceder a los endpoints de administración.
+  enum :role, { estudiante: 0, admin: 1 }
+
   has_many :restaurants, dependent: :destroy
   has_many :expenses, dependent: :destroy
 
@@ -11,4 +15,13 @@ class User < ApplicationRecord
   validates :current_balance, numericality: { greater_than_or_equal_to: 0, allow_nil: true }
 
   normalizes :email, with: ->(email) { email.strip.downcase }
+
+  # Saldo disponible del mes: monto mensual menos lo gastado en ese mes,
+  # acotado a 0. Se calcula siempre a partir de los gastos, por lo que no puede
+  # desajustarse ni superar el monto mensual (el BAES se reinicia cada mes).
+  def saldo_actual(fecha = Date.current)
+    return nil if monthly_balance.nil?
+
+    [ monthly_balance - expenses.for_month(fecha).sum(:amount), 0 ].max
+  end
 end

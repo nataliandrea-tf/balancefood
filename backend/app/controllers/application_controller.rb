@@ -1,8 +1,23 @@
 class ApplicationController < ActionController::API
+  include Pundit::Authorization
+
   rescue_from ActiveRecord::RecordNotFound, with: :not_found
   rescue_from ActiveRecord::RecordInvalid, with: :unprocessable
+  # Cuando una policy de Pundit niega la acción, se responde 403.
+  rescue_from Pundit::NotAuthorizedError, with: :forbidden
+
+  # Atribuye los registros de auditoría (gema audited) al usuario autenticado.
+  around_action :auditar_como_usuario
 
   private
+
+  def auditar_como_usuario(&block)
+    if current_user
+      Audited.audit_class.as_user(current_user, &block)
+    else
+      yield
+    end
+  end
 
   def authenticate!
     return if current_user
@@ -10,6 +25,7 @@ class ApplicationController < ActionController::API
     render json: { error: "No autorizado" }, status: :unauthorized
   end
 
+  # Pundit usa este método (pundit_user) para evaluar las policies.
   def current_user
     return @current_user if defined?(@current_user)
 
@@ -23,12 +39,16 @@ class ApplicationController < ActionController::API
     AuthToken.decode(header.split(" ", 2).last)
   end
 
-  def not_found(exception)
+  def not_found(_exception)
     render json: { error: "Recurso no encontrado" }, status: :not_found
   end
 
   def unprocessable(exception)
     render json: { errors: exception.record.errors.full_messages },
            status: :unprocessable_entity
+  end
+
+  def forbidden
+    render json: { error: "No tienes permiso para esta acción" }, status: :forbidden
   end
 end

@@ -1,5 +1,8 @@
 # Audit all gems listed in the Gemfile for known security problems by running bin/bundler-audit.
-# CVEs that are not relevant to the application can be enumerated on the ignore list below.
+# CVEs que no apliquen al proyecto se pueden enumerar en la lista `ignore` de abajo.
+#
+# Los advisories de puma 8.0.2 quedaron resueltos al subir puma a 8.1.2
+# (corrige memory exhaustion por SSL, el parser de JRuby y los advisories
+# previos), así que la lista va vacía.
 
-ignore:
-  - CVE-THAT-DOES-NOT-APPLY
+ignore: []

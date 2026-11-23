@@ -1,4 +1,8 @@
 class Expense < ApplicationRecord
+  # Registra en la tabla audits cada creación, edición y borrado del gasto
+  # (quién lo hizo y qué cambió). Ver GET /expenses/:id/historial.
+  audited
+
   belongs_to :user
   belongs_to :menu_item, optional: true
 
@@ -10,37 +14,19 @@ class Expense < ApplicationRecord
 
   scope :for_month, ->(date) { where(spent_on: date.beginning_of_month..date.end_of_month) }
 
-  after_create :descontar_saldo
-  after_destroy :devolver_saldo
-  after_update :ajustar_saldo, if: :saved_change_to_amount?
-
   private
 
+  # El saldo no se guarda: se calcula como monto mensual menos los gastos del
+  # mes (ver User#saldo_actual). Aquí solo validamos que el gasto no deje el
+  # saldo del mes en negativo. Se excluye el propio gasto para que al editar su
+  # monto se compare contra los demás gastos del mes, no contra sí mismo.
   def no_supera_saldo
-    return if user.nil? || user.current_balance.nil? || amount.nil?
+    return if user.nil? || user.monthly_balance.nil? || amount.nil? || spent_on.nil?
 
-    disponible = user.current_balance + amount_in_database.to_i
+    gastado = user.expenses.for_month(spent_on).where.not(id: id).sum(:amount)
+    disponible = user.monthly_balance - gastado
     return if amount <= disponible
 
     errors.add(:amount, "supera tu saldo disponible")
-  end
-
-  def descontar_saldo
-    return if user.current_balance.nil?
-
-    user.update_column(:current_balance, user.current_balance - amount)
-  end
-
-  def devolver_saldo
-    return if user.current_balance.nil?
-
-    user.update_column(:current_balance, user.current_balance + amount)
-  end
-
-  def ajustar_saldo
-    return if user.current_balance.nil?
-
-    anterior, nuevo = saved_change_to_amount
-    user.update_column(:current_balance, user.current_balance + anterior - nuevo)
   end
 end

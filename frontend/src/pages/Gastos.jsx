@@ -74,10 +74,10 @@ export default function Gastos() {
       const cuerpo = { expense: { ...form, amount: monto } };
 
       if (editandoId) {
-        await api.patch(`/expenses/${editandoId}`, cuerpo);
+        await api.patch(`/expenses/${editandoId}`, cuerpo); //editar
         setMensaje("Gasto actualizado.");
       } else {
-        await api.post("/expenses", cuerpo);
+        await api.post("/expenses", cuerpo); //crear
         setMensaje("Gasto registrado.");
       }
 

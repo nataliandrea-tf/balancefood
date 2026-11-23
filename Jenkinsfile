@@ -41,7 +41,7 @@ pipeline {
         APP_NAME         = 'balancefood-backend'
         APP_DIR          = 'backend'
         POSTGRES_IMAGE   = 'postgres:16-alpine'
-        RUBY_IMAGE       = 'ruby:3.3.7-slim'
+        RUBY_IMAGE       = 'ruby:3.3.14-slim'
         BUNDLE_VOLUME    = 'balancefood-backend-bundle'
         DEPLOY_PORT      = '4101'
         PUBLIC_URL       = 'https://apibalancefood.frubilarz.cl'

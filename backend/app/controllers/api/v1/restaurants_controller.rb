@@ -34,6 +34,8 @@ module Api
       end
 
       def update
+        authorize @restaurant
+
         if @restaurant.update(restaurant_params)
           render json: restaurant_json(@restaurant)
         else
@@ -43,6 +45,8 @@ module Api
       end
 
       def destroy
+        authorize @restaurant
+
         @restaurant.destroy
         head :no_content
       end
@@ -50,7 +54,7 @@ module Api
       private
 
       def set_restaurant
-        @restaurant = current_user.restaurants.find(params[:id])
+        @restaurant = Restaurant.find(params[:id])
       end
 
       def restaurant_params
