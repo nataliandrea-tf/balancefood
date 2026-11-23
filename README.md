@@ -158,6 +158,13 @@ Todos los endpoints cuelgan de `/api/v1`. La versión en la ruta permite evoluci
 | `GET` | `/expenses/:id` | ✅ | Detalle |
 | `PATCH` | `/expenses/:id` | ✅ | Actualizar |
 | `DELETE` | `/expenses/:id` | ✅ | Eliminar (devuelve el monto al saldo) |
+| `GET` | `/expenses/:id/historial` | ✅ | Historial de auditoría del gasto (solo propio) |
+
+### Administración
+
+| Método | Ruta | Auth | Descripción |
+|---|---|:---:|---|
+| `GET` | `/admin/users` | ✅ (admin) | Listado de usuarios. Un estudiante recibe `403` |
 
 ### Códigos HTTP
 
@@ -167,6 +174,7 @@ Todos los endpoints cuelgan de `/api/v1`. La versión en la ruta permite evoluci
 | `201` | Recurso creado |
 | `204` | Eliminación exitosa, sin contenido |
 | `401` | Token ausente, inválido o expirado |
+| `403` | Usuario autenticado sin permiso para la acción (rol) |
 | `404` | Recurso inexistente o perteneciente a otro usuario |
 | `422` | Datos que no superan las validaciones |
 
@@ -182,13 +190,98 @@ Se optó por `MessageVerifier` en lugar de una gem de JWT para no incorporar dep
 
 **Aislamiento de recursos.** Las acciones de escritura resuelven el recurso partiendo del usuario autenticado (`current_user.restaurants.find(...)`), lo que genera un `WHERE user_id = ? AND id = ?`. Un usuario que intenta modificar un recurso ajeno recibe `404`, no `403`: no se le confirma que el recurso existe.
 
-> Los roles y permisos diferenciados no forman parte del alcance de la Evaluación 1 (punto 21.2 del enunciado) y serán incorporados en la Evaluación 2. Lo implementado aquí es propiedad de recursos, derivada de las relaciones del modelo.
+## 🔐 Roles y autorización
+
+El sistema define **dos roles**, persistidos en la columna `role` de `users` (enum: `estudiante` por defecto, `admin`). La autorización se verifica **en la API** con [Pundit](https://github.com/varvet/pundit) mediante *policies*, no solo ocultando botones en la interfaz:
+
+- **401 Unauthorized** — petición sin token o con token inválido/expirado.
+- **403 Forbidden** — usuario autenticado sin permiso para la acción (lo responde la policy de Pundit).
+
+### Matriz de permisos
+
+| Acción | Estudiante | Admin |
+|---|:---:|:---:|
+| Ver locales y cartas | ✅ | ✅ |
+| Crear local | ✅ | ✅ |
+| Editar / eliminar local | Solo los propios | Cualquiera |
+| Registrar / editar / eliminar gastos | Solo los propios | Solo los propios |
+| Ver historial de un gasto | Solo los propios | Solo los propios |
+| Listar usuarios (`GET /admin/users`) | ❌ (403) | ✅ |
+
+- **Restricción por rol** — `GET /api/v1/admin/users` es solo para admin (un estudiante recibe `403`); además, un admin puede gestionar locales ajenos.
+- **Restricción por propiedad** — cada usuario gestiona solo sus propios recursos.
+
+Tanto la **web** como la **app móvil** muestran u ocultan las acciones según el rol, y ante un `403` muestran un mensaje claro en lugar de un error técnico.
+
+### Historial de cambios (auditoría)
+
+Los gastos se auditan con la gema [`audited`](https://github.com/collectiveidea/audited): cada creación, edición y borrado queda registrado (quién lo hizo, qué cambió y cuándo). Se consulta con `GET /api/v1/expenses/:id/historial`.
+
+## 📱 Aplicación móvil (React Native)
+
+Segunda interfaz del mismo producto. Consume la **misma API REST** con los datos reales; no tiene backend propio ni duplica la lógica de negocio.
+
+### Pantallas principales
+
+1. **Login** — inicio de sesión contra la API.
+2. **Inicio** — saldo disponible y accesos; muestra la sección de administración solo si el rol es `admin`.
+3. **Locales** — listado de locales desde la API.
+4. **Detalle del local** — carta con precios y botón para **registrar un consumo**.
+5. **Mis gastos** — gastos del mes y saldo actualizado.
+6. **Usuarios** — (solo admin) listado de usuarios del sistema.
+
+Flujo de negocio completo: **login → listado de locales → detalle → registrar consumo → saldo y listado actualizados**.
+
+### Stack
+
+| Capa | Tecnología |
+|---|---|
+| Framework | React Native 0.88 (CLI) · TypeScript |
+| Navegación | React Navigation (native-stack) |
+| Estado de sesión | Context API |
+| Token seguro | `react-native-keychain` (Keystore / Keychain) |
+| Variables de entorno | `react-native-dotenv` |
+| Testing | Jest + React Native Testing Library |
+
+### Requisitos
+
+- Node.js 20+ y JDK 17
+- Android Studio con el SDK de Android (o Xcode en macOS)
+- Un dispositivo Android con depuración USB, o un emulador
+
+### Instalación y ejecución
+
+```bash
+cd mobile
+npm install
+cp .env.example .env            # ajustar API_URL si se usa otro backend
+npx react-native run-android    # con el dispositivo o emulador conectado
+```
+
+### Autenticación móvil
+
+Al iniciar sesión, el token firmado que entrega la API se guarda en el **almacenamiento seguro del sistema** (Keystore en Android, Keychain en iOS) con `react-native-keychain`, **no en texto plano**. Se envía en la cabecera `Authorization: Bearer <token>` en cada petición. Si la API responde `401`, la app descarta el token y vuelve a la pantalla de login.
+
+### Variables de entorno
+
+| Variable | Descripción |
+|---|---|
+| `API_URL` | URL base de la API (ver `mobile/.env.example`). La lee `react-native-dotenv`; no está escrita en el código. |
+
+### Tests móviles
+
+```bash
+cd mobile
+npm test
+```
+
+Cubren el formulario de login (React Native Testing Library), el servicio que llama a la API y las utilidades de formato.
 
 ## 🚀 Instalación y ejecución
 
 ### Requisitos
 
-- Ruby 3.3.7 (la versión exacta que usa el pipeline; ver `backend/.ruby-version`)
+- Ruby 3.3.14 (la versión exacta que usa el pipeline; ver `backend/.ruby-version`)
 - Node.js 22 o superior
 - PostgreSQL 16
 
@@ -222,7 +315,10 @@ cd backend
 bin/rails test
 ```
 
-63 tests: 19 unitarios de modelos y 44 de integración sobre los endpoints.
+Tests unitarios de modelos y de integración sobre los endpoints, incluidos los
+**tests de autorización** (respuestas permitidas y `403`) para los endpoints
+protegidos por rol. Los tests de la app móvil se ejecutan aparte con `npm test`
+dentro de `mobile/` (ver sección _Aplicación móvil_).
 
 ### Verificaciones de calidad
 
@@ -268,10 +364,11 @@ En desarrollo, `config/database.yml` omite el usuario y toma el del sistema oper
 
 ### Credenciales de prueba
 
-| Perfil | Correo | Contraseña |
-|---|---|---|
-| Estudiante | `demo@utem.cl` | `balancefood2026` |
-| Locatario | `locatario@balancefood.cl` | `balancefood2026` |
+| Perfil | Rol | Correo | Contraseña |
+|---|---|---|---|
+| Estudiante | `estudiante` | `demo@utem.cl` | `balancefood2026` |
+| Locatario | `estudiante` | `locatario@balancefood.cl` | `balancefood2026` |
+| Administrador | `admin` | `admin@balancefood.cl` | `balancefood2026` |
 
 La cuenta de estudiante tiene saldo JUNAEB configurado y gastos registrados,
 de modo que el resumen presupuestario muestra valores reales. La cuenta de
@@ -297,7 +394,7 @@ balancefood/
 │       ├── api/                  # Cliente HTTP centralizado
 │       ├── context/              # Estado de sesión
 │       └── pages/                # Vistas por ruta
-├── mobile/           # Aplicación en Flutter (Evaluación 2)
+├── mobile/           # Aplicación móvil en React Native
 └── Jenkinsfile       # Pipeline de CI/CD
 ```
 
@@ -455,7 +552,7 @@ El Nginx que vive dentro del contenedor del frontend (`frontend/nginx.conf`) sol
 |---|---|:---:|
 | **Tarea 0** | Propuesta y planificación | ✅ Aprobada |
 | **Evaluación 1** | Web: API, base de datos, autenticación, 3 CRUD y deploy | ✅ Aprobada  |
-| **Evaluación 2** | Móvil: Flutter con geolocalización | ⚪ Pendiente |
+| **Evaluación 2** | Móvil (React Native), roles y autorización, historial de gastos | 🟡 En desarrollo |
 | **Evaluación 3** | Calidad, testing, performance y DevOps | ⚪ Pendiente |
 
 ---
