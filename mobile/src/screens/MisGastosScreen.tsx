@@ -68,7 +68,7 @@ export default function MisGastosScreen() {
               Gastado este mes: {formatoCLP(resumen.total_gastado)}
             </Text>
           </View>
-        ) : null
+        ) : undefined
       }
       ListEmptyComponent={<Text style={styles.vacio}>No has registrado gastos este mes.</Text>}
       renderItem={({item}) => (

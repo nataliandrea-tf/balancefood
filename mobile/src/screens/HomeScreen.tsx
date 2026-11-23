@@ -29,6 +29,12 @@ export default function HomeScreen() {
         <Text style={styles.botonTexto}>Mis gastos</Text>
       </TouchableOpacity>
 
+      {esAdmin ? (
+        <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('Usuarios')}>
+          <Text style={styles.botonTexto}>Usuarios (admin)</Text>
+        </TouchableOpacity>
+      ) : null}
+
       <View style={styles.espacio} />
 
       <TouchableOpacity style={[styles.boton, styles.botonSalir]} onPress={cerrarSesion}>

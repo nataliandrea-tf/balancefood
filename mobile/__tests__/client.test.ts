@@ -5,7 +5,7 @@ describe('apiFetch', () => {
   const fetchMock = jest.fn();
 
   beforeEach(() => {
-    (global as unknown as {fetch: jest.Mock}).fetch = fetchMock;
+    (globalThis as unknown as {fetch: jest.Mock}).fetch = fetchMock;
     fetchMock.mockReset();
   });
 
