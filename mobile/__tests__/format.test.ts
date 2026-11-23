@@ -1,4 +1,4 @@
-import {formatoCLP} from '../src/utils/format';
+import {fechaHoy, formatoCLP} from '../src/utils/format';
 
 describe('formatoCLP', () => {
   it('agrega separador de miles con punto', () => {
@@ -13,5 +13,11 @@ describe('formatoCLP', () => {
   it('muestra un guion cuando el monto es nulo', () => {
     expect(formatoCLP(null)).toBe('—');
     expect(formatoCLP(undefined)).toBe('—');
+  });
+});
+
+describe('fechaHoy', () => {
+  it('devuelve la fecha en formato AAAA-MM-DD', () => {
+    expect(fechaHoy()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });
