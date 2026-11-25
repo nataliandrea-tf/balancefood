@@ -27,6 +27,7 @@ comerciante = User.find_or_initialize_by(email: "locatario@balancefood.cl")
 comerciante.assign_attributes(
   name: "Locatario Demo",
   password: "balancefood2026",
+  role: :locatario,
   monthly_balance: 0,
   current_balance: 0
 )

@@ -31,3 +31,25 @@ export function getRestaurants(token?: string | null) {
 export function getRestaurant(id: number, token?: string | null) {
   return apiFetch<RestaurantConMenu>(`/restaurants/${id}`, {token});
 }
+
+// GET /restaurants/mine -> los locales del usuario autenticado (su dueño).
+export function getMisLocales(token: string) {
+  return apiFetch<Restaurant[]>('/restaurants/mine', {token});
+}
+
+export type NuevoPlato = {
+  name: string;
+  price: number;
+  description?: string;
+  category?: string;
+};
+
+// POST /restaurants/:id/menu_items -> agrega un plato a la carta del local.
+// La API solo lo permite si el usuario es dueño del local (locatario).
+export function createMenuItem(token: string, restaurantId: number, plato: NuevoPlato) {
+  return apiFetch<MenuItem>(`/restaurants/${restaurantId}/menu_items`, {
+    method: 'POST',
+    token,
+    body: {menu_item: plato},
+  });
+}
