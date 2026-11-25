@@ -17,6 +17,20 @@ module Api
         render json: restaurants.map { |r| restaurant_json(r) }
       end
 
+      # Ventas del locatario: los consumos que los estudiantes registraron en
+      # los platos de sus locales. Se cruza Expense -> MenuItem -> Restaurant
+      # y se filtra por los locales del usuario autenticado.
+      def ventas
+        consumos = Expense.joins(menu_item: :restaurant)
+                          .where(restaurants: { user_id: current_user.id })
+                          .order(spent_on: :desc, created_at: :desc)
+
+        render json: {
+          ventas: consumos.map { |c| venta_json(c) },
+          total: consumos.sum(:amount)
+        }
+      end
+
       def show
         restaurant = Restaurant.find(params[:id])
         render json: restaurant_json(restaurant, incluir_menu: true)
@@ -71,6 +85,16 @@ module Api
 
       def menu_item_json(item)
         item.slice(:id, :name, :description, :price, :category, :available)
+      end
+
+      def venta_json(consumo)
+        {
+          id: consumo.id,
+          amount: consumo.amount,
+          spent_on: consumo.spent_on,
+          plato: consumo.menu_item&.name,
+          local: consumo.menu_item&.restaurant&.name
+        }
       end
     end
   end
