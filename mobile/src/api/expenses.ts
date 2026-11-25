@@ -38,3 +38,8 @@ export function createExpense(token: string, gasto: NuevoGasto) {
     body: {expense: gasto},
   });
 }
+
+// DELETE /expenses/:id (requiere token). Responde 204 sin cuerpo.
+export function deleteExpense(token: string, id: number) {
+  return apiFetch<null>(`/expenses/${id}`, {method: 'DELETE', token});
+}

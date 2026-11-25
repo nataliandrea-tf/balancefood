@@ -1,17 +1,26 @@
 import React, {useCallback, useState} from 'react';
-import {ActivityIndicator, FlatList, StyleSheet, Text, View} from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
-import {Expense, ExpensesResumen, getExpenses} from '../api/expenses';
+import {deleteExpense, Expense, ExpensesResumen, getExpenses} from '../api/expenses';
 import {useAuth} from '../context/AuthContext';
 import {formatoCLP} from '../utils/format';
 import type {ApiError} from '../api/client';
 
 export default function MisGastosScreen() {
-  const {token} = useAuth();
+  const {token, refrescarUsuario} = useAuth();
   const [gastos, setGastos] = useState<Expense[]>([]);
   const [resumen, setResumen] = useState<ExpensesResumen | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [eliminando, setEliminando] = useState<number | null>(null);
 
   const cargar = useCallback(async () => {
     if (!token) {
@@ -37,6 +46,35 @@ export default function MisGastosScreen() {
       cargar();
     }, [cargar]),
   );
+
+  // Borra un gasto tras confirmar. Al eliminarlo, el saldo del mes sube, así
+  // que se recarga la lista y se refresca el usuario (para el saldo del Home).
+  function confirmarEliminar(item: Expense) {
+    Alert.alert(
+      'Eliminar gasto',
+      `¿Eliminar "${item.description ?? 'Consumo'}" por ${formatoCLP(item.amount)}?`,
+      [
+        {text: 'Cancelar', style: 'cancel'},
+        {text: 'Eliminar', style: 'destructive', onPress: () => eliminar(item)},
+      ],
+    );
+  }
+
+  async function eliminar(item: Expense) {
+    if (!token) {
+      return;
+    }
+    setEliminando(item.id);
+    try {
+      await deleteExpense(token, item.id);
+      await cargar();
+      await refrescarUsuario();
+    } catch (e) {
+      Alert.alert('No se pudo eliminar', (e as ApiError).message);
+    } finally {
+      setEliminando(null);
+    }
+  }
 
   if (cargando) {
     return (
@@ -78,6 +116,16 @@ export default function MisGastosScreen() {
             <Text style={styles.fecha}>{item.spent_on}</Text>
           </View>
           <Text style={styles.monto}>-{formatoCLP(item.amount)}</Text>
+          <TouchableOpacity
+            style={styles.eliminar}
+            disabled={eliminando === item.id}
+            onPress={() => confirmarEliminar(item)}>
+            {eliminando === item.id ? (
+              <ActivityIndicator color="#ef4444" size="small" />
+            ) : (
+              <Text style={styles.eliminarTexto}>Eliminar</Text>
+            )}
+          </TouchableOpacity>
         </View>
       )}
     />
@@ -103,6 +151,8 @@ const styles = StyleSheet.create({
   gastoDesc: {fontSize: 15, fontWeight: '500', color: '#111827'},
   fecha: {fontSize: 12, color: '#9ca3af', marginTop: 2},
   monto: {fontSize: 15, fontWeight: '700', color: '#ef4444'},
+  eliminar: {marginLeft: 12, paddingVertical: 6, paddingHorizontal: 8, minWidth: 64, alignItems: 'center'},
+  eliminarTexto: {color: '#ef4444', fontWeight: '600', fontSize: 13},
   vacio: {textAlign: 'center', color: '#6b7280', marginTop: 20},
   error: {color: '#b91c1c', textAlign: 'center'},
 });
