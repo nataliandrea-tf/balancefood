@@ -126,6 +126,29 @@ module Api
         assert_equal [ propio.id ], response.parsed_body.map { |r| r["id"] }
       end
 
+      test "ventas requiere autenticacion" do
+        get "/api/v1/restaurants/ventas"
+
+        assert_response :unauthorized
+      end
+
+      test "ventas devuelve los consumos de los locales del locatario" do
+        get "/api/v1/restaurants/ventas", headers: auth_header(users(:comerciante))
+
+        assert_response :success
+        assert_equal 3500, response.parsed_body["total"]
+        assert_equal 1, response.parsed_body["ventas"].size
+        assert_equal "Menú del día", response.parsed_body["ventas"].first["plato"]
+      end
+
+      test "ventas no incluye consumos de locales ajenos" do
+        get "/api/v1/restaurants/ventas", headers: auth_header(users(:natalia))
+
+        assert_response :success
+        assert_equal 0, response.parsed_body["total"]
+        assert_empty response.parsed_body["ventas"]
+      end
+
       private
 
       def auth_header(user)

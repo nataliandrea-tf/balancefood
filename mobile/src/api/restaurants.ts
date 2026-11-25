@@ -37,6 +37,21 @@ export function getMisLocales(token: string) {
   return apiFetch<Restaurant[]>('/restaurants/mine', {token});
 }
 
+export type Venta = {
+  id: number;
+  amount: number;
+  spent_on: string;
+  plato: string | null;
+  local: string | null;
+};
+
+export type VentasResponse = {ventas: Venta[]; total: number};
+
+// GET /restaurants/ventas -> consumos registrados en los locales del locatario.
+export function getVentas(token: string) {
+  return apiFetch<VentasResponse>('/restaurants/ventas', {token});
+}
+
 export type NuevoPlato = {
   name: string;
   price: number;
