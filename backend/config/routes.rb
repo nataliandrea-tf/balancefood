@@ -14,6 +14,7 @@ Rails.application.routes.draw do
       ## Locales: Ver, editar, crear y borrar lócales
       resources :restaurants do
         get :mine, on: :collection
+        get :ventas, on: :collection
         resources :menu_items, only: [ :index, :create ]
       end
       ## Platos: Ver, editar, crear y borrar un plato

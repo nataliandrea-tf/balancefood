@@ -10,6 +10,7 @@ import LocalDetalleScreen from '../screens/LocalDetalleScreen';
 import MisGastosScreen from '../screens/MisGastosScreen';
 import UsuariosScreen from '../screens/UsuariosScreen';
 import MiLocalScreen from '../screens/MiLocalScreen';
+import MisVentasScreen from '../screens/MisVentasScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -19,6 +20,7 @@ export type RootStackParamList = {
   MisGastos: undefined;
   Usuarios: undefined;
   MiLocal: undefined;
+  MisVentas: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -59,6 +61,7 @@ export default function AppNavigator() {
             <Stack.Screen name="MisGastos" component={MisGastosScreen} options={{title: 'Mis gastos'}} />
             <Stack.Screen name="Usuarios" component={UsuariosScreen} options={{title: 'Usuarios'}} />
             <Stack.Screen name="MiLocal" component={MiLocalScreen} options={{title: 'Mi local'}} />
+            <Stack.Screen name="MisVentas" component={MisVentasScreen} options={{title: 'Mis ventas'}} />
           </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} options={{headerShown: false}} />

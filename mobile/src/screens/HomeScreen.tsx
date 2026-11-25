@@ -20,21 +20,37 @@ export default function HomeScreen() {
         <Text style={styles.hola}>Hola, {user?.name}</Text>
         {esAdmin ? <Text style={styles.badge}>Administrador</Text> : null}
         {esLocatario ? <Text style={styles.badge}>Locatario</Text> : null}
-        <Text style={styles.etiqueta}>Saldo disponible</Text>
-        <Text style={styles.saldo}>{formatoCLP(user?.current_balance)}</Text>
+        {/* El saldo BAES solo aplica al estudiante; el locatario no lo tiene. */}
+        {esLocatario ? null : (
+          <>
+            <Text style={styles.etiqueta}>Saldo disponible</Text>
+            <Text style={styles.saldo}>{formatoCLP(user?.current_balance)}</Text>
+          </>
+        )}
       </View>
 
-      <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('Locales')}>
-        <Text style={styles.botonTexto}>Ver locales</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('MisGastos')}>
-        <Text style={styles.botonTexto}>Mis gastos</Text>
-      </TouchableOpacity>
+      {/* Opciones del estudiante (y admin): ver locales y sus gastos. */}
+      {esLocatario ? null : (
+        <>
+          <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('Locales')}>
+            <Text style={styles.botonTexto}>Ver locales</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('MisGastos')}>
+            <Text style={styles.botonTexto}>Mis gastos</Text>
+          </TouchableOpacity>
+        </>
+      )}
 
+      {/* Opciones del locatario: gestionar su carta y ver sus ventas. */}
       {esLocatario ? (
-        <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('MiLocal')}>
-          <Text style={styles.botonTexto}>Mi local</Text>
-        </TouchableOpacity>
+        <>
+          <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('MiLocal')}>
+            <Text style={styles.botonTexto}>Mi local</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('MisVentas')}>
+            <Text style={styles.botonTexto}>Mis ventas</Text>
+          </TouchableOpacity>
+        </>
       ) : null}
 
       {esAdmin ? (
