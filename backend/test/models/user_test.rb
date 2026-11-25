@@ -35,4 +35,14 @@ class UserTest < ActiveSupport::TestCase
       user.destroy
     end
   end
+
+  test "define los tres roles del sistema" do
+    assert_equal %w[estudiante admin locatario], User.roles.keys
+  end
+
+  test "el locatario es dueño de locales" do
+    locatario = users(:comerciante)
+    assert locatario.locatario?
+    assert_includes locatario.restaurants, restaurants(:casino_central)
+  end
 end

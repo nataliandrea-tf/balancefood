@@ -12,12 +12,14 @@ export default function HomeScreen() {
   const navigation = useNavigation<Nav>();
   const {user, cerrarSesion} = useAuth();
   const esAdmin = user?.role === 'admin';
+  const esLocatario = user?.role === 'locatario';
 
   return (
     <View style={styles.container}>
       <View style={styles.tarjeta}>
         <Text style={styles.hola}>Hola, {user?.name}</Text>
         {esAdmin ? <Text style={styles.badge}>Administrador</Text> : null}
+        {esLocatario ? <Text style={styles.badge}>Locatario</Text> : null}
         <Text style={styles.etiqueta}>Saldo disponible</Text>
         <Text style={styles.saldo}>{formatoCLP(user?.current_balance)}</Text>
       </View>
@@ -28,6 +30,12 @@ export default function HomeScreen() {
       <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('MisGastos')}>
         <Text style={styles.botonTexto}>Mis gastos</Text>
       </TouchableOpacity>
+
+      {esLocatario ? (
+        <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('MiLocal')}>
+          <Text style={styles.botonTexto}>Mi local</Text>
+        </TouchableOpacity>
+      ) : null}
 
       {esAdmin ? (
         <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('Usuarios')}>
